@@ -9,7 +9,7 @@ Exploratory\ Analysis.ipynb
 requirements.txt
 
 # Jupyter Notebook
-.ipynb_checkpoints
+*.ipynb_checkpoints
 
 # Python
-.pyc
+*.pyc
