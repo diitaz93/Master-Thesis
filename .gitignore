@@ -1,0 +1,15 @@
+# Custom
+se.csv
+unique* 
+temp* 
+col*
+outliers*
+Exploratory\ Analysis.ipynb
+*~
+requirements.txt
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Python
+.pyc
