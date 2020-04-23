@@ -16,10 +16,10 @@ from decagon.utility import rank_metrics, preprocessing
 from data.utils_mod import *
 
 # Train on GPU
-os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
+#os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+#os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth = True
 
 ###########################################################
 #
