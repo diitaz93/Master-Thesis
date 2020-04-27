@@ -14,9 +14,16 @@
 
 #---------------------------------- PREPARATION -----------------------------------------------#
 TARGET=$1
-if [ ! -d "orig_data" ]; then echo "Download original data and place it in ./orig_data/"; fi
-if [ ! -d "modif_data" ]; then mkdir modif_data; fi
-rm modif_data/new* outliers* 2> /dev/null
+if [ ! -d "orig_data" ]; then
+    echo "Download original data and place it in ./orig_data/"
+    exit 1
+fi
+if [ ! -d "modif_data" ]; then
+    mkdir modif_data
+else
+    rm modif_data/new* 2> /dev/null
+fi
+rm outliers* 2> /dev/null
 tail -n +2 $TARGET > modif_data/new-decagon-targets.csv
 tail -n +2 orig_data/bio-decagon-combo.csv > modif_data/new-decagon-combo.csv
 echo 'Original number of drug-target interactions'
@@ -46,7 +53,7 @@ done < outliers_se.csv
 echo 'Outliers deleted. New number of lines:'
 wc -l modif_data/new-decagon-combo.csv
 #------------------------------- DETECTION OF DTI OUTLIERS ------------------------------------#
-awk -F "\"*,\"*" '{print $2}' modif_data/new-decagon-targets.csv | tail -n +2 | sort | uniq > col_genes.csv
+awk -F "\"*,\"*" '{print $2}' modif_data/new-decagon-targets.csv | sort | uniq > col_genes.csv
 echo 'Total number of target genes'
 wc -l col_genes.csv
 while read p; do
