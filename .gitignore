@@ -9,6 +9,7 @@ Exploratory\ Analysis.ipynb
 
 # Jupyter Notebook
 *.ipynb_checkpoints
+sparkml_lab.ipynb
 
 # Python
 *.pyc
