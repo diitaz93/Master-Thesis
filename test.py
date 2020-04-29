@@ -4,6 +4,7 @@ from operator import itemgetter
 from itertools import combinations
 import time
 import os
+import psutil
 import tensorflow as tf
 import numpy as np
 import networkx as nx
@@ -20,6 +21,11 @@ from data.utils_mod import *
 #os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 #config = tf.ConfigProto()
 #config.gpu_options.allow_growth = True
+
+# BEGIN
+start = time.time()
+pid = os.getpid()
+ps= psutil.Process(pid)
 
 ###########################################################
 #
@@ -288,4 +294,7 @@ for epoch in range(FLAGS.epochs):
         itr += 1
 #sess.close()
 print("Optimization finished!")
-print("Total time: ", time.time()-t)
+finish = time.time()
+memUse = ps.memory_info()
+print("Total time, virtual memory and RSS Memory:")
+print(finish-start, memUse.vms , memUse.rss)
