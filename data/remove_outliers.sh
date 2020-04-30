@@ -1,16 +1,27 @@
 #!/bin/bash
 
 # remove_outliers.sh
-#--------------------------------------------------------------------------- #
-# Script for detecting and elimintating the genes in DTI database that are   #
-# not present in PPI database and the drugs in the DDI database that are not #
-# present in the SSE database. In this fashion, all databases have the same  #
-# elements (nodes).                                                          #
-# The scripts gets as parameter the name of the datafile containing the DTI  #
-# interactions.                                                              #
-#                                                                            #
-# Author: Juan Sebastian Diaz, April 2020                                    #
-#----------------------------------------------------------------------------#
+#---------------------------------------------------------------------------- #
+# This script selects a compatible subset of the DECAGON data removing        #
+# datapoints considered as outliers. This scripts does 3 dataset depurations: #
+# 1) Detecting and eliminating the drugs in the DDI database that are not     #
+# present in the SSE database.                                                #
+# 2) Detecting and elimintating the genes in DTI database that are not        #
+# present in PPI database.                                                    #
+# 3) Detect and eliminate the genes in the protein feature databases that are #
+# not present in the PPI database.                                            #
+# In this fashion, We form a fully connected database without outliers        #
+# Note: The feature databases may be incomplete for now. This means that      #
+# there may be genes or drugs in DECAGON databases without feature vectors    #
+# The scripts gets as parameter the name of the datafile containing the DTI   #
+# interactions.                                                               #
+#                                                                             #
+# col files: unique list of nodes of certain type                             #
+# outlier files: lines of certain node not present in other datasets          #
+# temp files: unimportant                                                     #
+#                                                                             #
+# Author: Juan Sebastian Diaz, April 2020                                     #
+#---------------------------------------------------------------------------- #
 
 #---------------------------------- PREPARATION -----------------------------------------------#
 TARGET=$1
@@ -30,12 +41,12 @@ echo 'Original number of drug-target interactions'
 wc -l modif_data/new-decagon-targets.csv
 echo "Original number of drug interactions"
 wc -l modif_data/new-decagon-combo.csv
-#------------------------------- DETECTION OF SSE OUTLIERS ------------------------------------#
-awk -F "\"*,\"*" '{print $1}' modif_data/new-decagon-combo.csv > col_drugs.csv
-awk -F "\"*,\"*" '{print $2}' modif_data/new-decagon-combo.csv >> col_drugs.csv
-sort col_drugs.csv | uniq > temp_different_drugs_combo.csv
+#------------------------------- 1. DETECTION OF SSE OUTLIERS ------------------------------------#
+awk -F "\"*,\"*" '{print $1}' modif_data/new-decagon-combo.csv > temp_different_drugs_combo.csv
+awk -F "\"*,\"*" '{print $2}' modif_data/new-decagon-combo.csv >> temp_different_drugs_combo.csv
+sort temp_different_drugs_combo.csv | uniq > col_drugs.csv
 echo 'Total number of drugs in DDI interactions'
-wc -l temp_different_drugs_combo.csv
+wc -l col_drugs.csv
 while read p; do
     if grep -Fqw $p orig_data/bio-decagon-mono.csv
     then
@@ -43,16 +54,16 @@ while read p; do
     else
 	echo "$p" >> outliers_se.csv
     fi
-done < temp_different_drugs_combo.csv
+done < col_drugs.csv
 echo 'SSE Outliers detected. Number of outliers:'
 wc -l outliers_se.csv
 # ------------------------------ DELETION OF SSE OUTLIERS -------------------------------------#
 while read p; do
     sed -in "/$p/d" modif_data/new-decagon-combo.csv
 done < outliers_se.csv
-echo 'Outliers deleted. New number of lines:'
+echo 'SSE outliers deleted. New number of DDI interactions:'
 wc -l modif_data/new-decagon-combo.csv
-#------------------------------- DETECTION OF DTI OUTLIERS ------------------------------------#
+#------------------------------- 2. DETECTION OF DTI OUTLIERS ------------------------------------#
 awk -F "\"*,\"*" '{print $2}' modif_data/new-decagon-targets.csv | sort | uniq > col_genes.csv
 echo 'Total number of target genes'
 wc -l col_genes.csv
@@ -64,7 +75,7 @@ while read p; do
 	echo "$p" >> outliers_dt.csv
     fi
 done < col_genes.csv
-echo 'Outliers detected. Number of outliers:'
+echo 'PPI Outliers detected. Number of outliers:'
 wc -l outliers_dt.csv
 # ------------------------------ DELETION OF DTI OUTLIERS -------------------------------------#
 while read p; do
@@ -72,5 +83,16 @@ while read p; do
 done < outliers_dt.csv
 echo 'Outliers deleted. New number of lines:'
 wc -l modif_data/new-decagon-targets.csv
+#------------------------------- 3. DETECTION OF PF OUTLIERS ------------------------------------#
+awk -F "\"*,\"*" '{print $1}' modif_data/ppi_mini.csv > temp_genes.csv
+awk -F "\"*,\"*" '{print $2}' modif_data/ppi_mini.csv >> temp_genes.csv
+sort temp_genes.csv | uniq > col_prot.csv
+echo "Total number of genes in PPI interactions"
+wc -l col_prot.csv
+while read p; do
+    tail -n +2 orig_data/proteins.csv | grep -w $p >> modif_data/new_proteins.csv
+done < col_prot.csv
+echo "Number of proteins with features"
+wc -l modif_data/new_proteins.csv
 #---------------------------- TERMINATION -----------------------------------------------------#
 rm col* temp* outliers*
