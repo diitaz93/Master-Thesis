@@ -14,7 +14,7 @@ from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
-from data.utils_mod import *
+from data.load_functions import *
 
 # Train on GPU
 #os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'

@@ -10,7 +10,7 @@ def load_combo_se(fname='bio-decagon-combo.csv'):
     se2name = {}
     drugs = set()
     fin = open(fname)
-    print 'Reading: %s' % fname
+    #print 'Reading: %s' % fname
     #fin.readline()
     for line in fin:
         stitch_id1, stitch_id2, se, se_name = line.strip().split(',')
@@ -31,15 +31,15 @@ def load_combo_se(fname='bio-decagon-combo.csv'):
 # and a dictionary that maps each gene ID to a number
 def load_ppi(fname='bio-decagon-ppi.csv'):
     fin = open(fname)
-    print 'Reading: %s' % fname
+    #print 'Reading: %s' % fname
     #fin.readline()
     edges = []
     for line in fin:
         gene_id1, gene_id2= line.strip().split(',')
         edges += [[gene_id1,gene_id2]]
     nodes = set([u for e in edges for u in e])
-    print 'Edges: %d' % len(edges)
-    print 'Nodes: %d' % len(nodes)
+    print 'Number of ppi interactions: %d' % len(edges)
+    print 'Number of genes: %d' % len(nodes)
     net = nx.Graph()
     net.add_edges_from(edges)
     net.remove_nodes_from(nx.isolates(net))
@@ -53,7 +53,7 @@ def load_mono_se(fname='bio-decagon-mono.csv'):
     stitch2se = defaultdict(set)
     se2name = {}
     fin = open(fname)
-    print 'Reading: %s' % fname
+    #print 'Reading: %s' % fname
     #fin.readline()
     for line in fin:
         contents = line.strip().split(',')
@@ -68,7 +68,7 @@ def load_mono_se(fname='bio-decagon-mono.csv'):
 def load_targets(fname='bio-decagon-targets.csv'):
     stitch2proteins = defaultdict(set)
     fin = open(fname)
-    print 'Reading: %s' % fname
+    #print 'Reading: %s' % fname
     #fin.readline()
     for line in fin:
         stitch_id, gene = line.strip().split(',')
@@ -81,7 +81,7 @@ def load_categories(fname='bio-decagon-effectcategories.csv'):
     se2name = {}
     se2class = {}
     fin = open(fname)
-    print 'Reading: %s' % fname
+    #print 'Reading: %s' % fname
     #fin.readline()
     for line in fin:
     	se, se_name, se_class = line.strip().split(',')
