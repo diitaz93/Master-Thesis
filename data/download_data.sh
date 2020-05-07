@@ -9,9 +9,9 @@
 # Author: Juan Sebastian Diaz, April 2020                                     #
 #---------------------------------------------------------------------------- #
 
-if [ ! -d "orig_data" ]; then
-    mkdir orig_data
-    cd orig_data
+if [ ! -d "original_data" ]; then
+    mkdir original_data
+    cd original_data
     wget http://snap.stanford.edu/decagon/bio-decagon-ppi.tar.gz
     tar -xf bio-decagon-ppi.tar.gz
     wget http://snap.stanford.edu/decagon/bio-decagon-targets.tar.gz
