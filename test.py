@@ -1,15 +1,27 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+# ============================================================================================= #
+# test.py (currently developing)                                                                #
+# Author: Juan Sebastian Diaz Boada                                                             #
+# Creation Date: 07/05/2020                                                                     #
+# ============================================================================================= #
+"""
+Runs DECAGON over a consistent real dataset with single drug side effects and protein features. 
+"""
+# ============================================================================================= #
 from __future__ import division
 from __future__ import print_function
 from operator import itemgetter
-from itertools import combinations
+from itertools import combinations, chain
 import time
 import os
-import psutil
 import tensorflow as tf
 import numpy as np
 import networkx as nx
 import scipy.sparse as sp
 from sklearn import metrics
+import pandas as pd
+import psutil
 from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
@@ -27,11 +39,9 @@ start = time.time()
 pid = os.getpid()
 ps= psutil.Process(pid)
 
-###########################################################
-#
-# Functions
-#
-###########################################################
+# ============================================================================================= #
+# FUNCTIONS
+
 def get_accuracy_scores(edges_pos, edges_neg, edge_type):
     feed_dict.update({placeholders['dropout']: 0})
     feed_dict.update({placeholders['batch_edge_type_idx']: minibatch.edge_type2idx[edge_type]})
@@ -93,31 +103,35 @@ def construct_placeholders(edge_types):
         for i, _ in edge_types})
     return placeholders
 
-###########################################################
-#
-# Load and preprocess data
-#
-###########################################################
+# ============================================================================================= #
+# LOAD DATA
 # Loading Gene data (PPI)
-ppi, gene2idx = load_ppi(fname='data/modif_data/ppi_mini.csv')
+ppi, gene2idx = load_ppi(fname='data/clean_data/ppi_mini.csv')
 ppi_adj = nx.adjacency_matrix(ppi)
 ppi_degrees = np.array(ppi_adj.sum(axis=0)).squeeze() 
-n_genes = ppi.number_of_nodes() # Number of genes (nodes)
+ppi_genes = ppi.number_of_nodes() # Number of genes (nodes)
 # Loading individual side effects
-stitch2se, semono2name, semono2idx = load_mono_se(fname='data/modif_data/mono_mini.csv')
+stitch2se, semono2name, semono2idx = load_mono_se(fname='data/clean_data/mono_mini.csv')
 n_semono = len(semono2name)
 print('Number of individual side effects: ', n_semono)
 # Loading Target data (DTI)
-stitch2proteins = load_targets(fname='data/modif_data/target_mini.csv')
+stitch2proteins = load_targets(fname='data/clean_data/targets_mini.csv')
+dti_drugs = len(pd.unique(stitch2proteins.keys()))
+dti_genes = len(set(chain.from_iterable(stitch2proteins.itervalues())))
+print('Number of genes in DTI:', dti_genes)
+print('Number of drugs in DTI:', dti_drugs)
 # Loading Drug data (DDI)
-combo2stitch, combo2se, se2name, drug2idx = load_combo_se(fname='data/modif_data/combo_mini.csv')
+combo2stitch, combo2se, secombo2name, drug2idx = load_combo_se(fname='data/clean_data/combo_mini.csv')
 # Loading Side effect data (features)
-#stitch2se, se2name = load_mono_se(fname='polypharmacy/mono_mini.csv')
-n_drugs = len(drug2idx)
-print('Number of drugs: ', n_drugs)
-
-# Drug-traget adjacency matrix
-dti_adj = np.zeros([n_genes,n_drugs],dtype=int)
+stitch2se, semono2name, semono2idx = load_mono_se(fname='data/clean_data/mono_mini.csv')
+# Loading protein features
+PF = pd.read_csv('data/clean_data/genes_mini.csv', sep=',',header=None).to_numpy()
+ddi_drugs = len(drug2idx)
+print('Number of drugs: ', ddi_drugs)
+# ============================================================================================= #
+# PREPROCESS DATA
+# Drug-target adjacency matrix
+dti_adj = np.zeros([ppi_genes,ddi_drugs],dtype=int)
 for drug in drug2idx.keys():
     for gene in stitch2proteins[drug]:
         if gene==set():
@@ -127,16 +141,15 @@ for drug in drug2idx.keys():
             idd = drug2idx[drug]
             dti_adj[idp,idd] = 1  
 dti_adj = sp.csr_matrix(dti_adj)
-
-# DDi adjacency matrix
+# DDI adjacency matrix
 ddi_adj_list = []
-for se in se2name.keys():
-    mat = np.zeros([n_drugs,n_drugs],dtype=int)
+for se in secombo2name.keys():
+    m = np.zeros([ddi_drugs,ddi_drugs],dtype=int)
     for pair in combo2se.keys():
         if se in combo2se[pair]:
             d1,d2 = combo2stitch[pair]
-            mat[drug2idx[d1],drug2idx[d2]] = 1
-    ddi_adj_list.append(sp.csr_matrix(mat))    
+            m[drug2idx[d1],drug2idx[d2]] = 1
+    ddi_adj_list.append(sp.csr_matrix(m))    
 ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
 
 adj_mats_orig = {
@@ -149,13 +162,13 @@ degrees = {
     0: [ppi_degrees, ppi_degrees],
     1: ddi_degrees_list + ddi_degrees_list, 
 }
-
 # featureless (genes)
-gene_feat = sp.identity(n_genes)
-gene_nonzero_feat, gene_num_feat = gene_feat.shape
-gene_feat = preprocessing.sparse_to_tuple(gene_feat.tocoo())
+#gene_feat = sp.identity(n_genes)
+gene_feat = sp.coo_matrix(PF)
+gene_nonzero_feat, gene_num_feat = 2*[gene_feat.shape[1]]
+gene_feat = preprocessing.sparse_to_tuple(gene_feat)#.tocoo())
 # features (drugs)
-oh_feat = np.zeros([n_drugs,n_semono], dtype=int)
+oh_feat = np.zeros([ddi_drugs,n_semono], dtype=int)
 for drug in drug2idx.keys():
     for se in stitch2se[drug]:
         did = drug2idx[drug]
@@ -165,7 +178,6 @@ drug_feat = sp.csr_matrix(oh_feat)
 drug_nonzero_feat = n_semono
 drug_num_feat = n_semono
 drug_feat = preprocessing.sparse_to_tuple(drug_feat.tocoo())
-
 # data representation
 num_feat = {
     0: gene_num_feat,
@@ -190,12 +202,9 @@ edge_type2decoder = {
 #Dictionary with the number of matrices for each entry of adj_mats_orig
 edge_types = {k: len(v) for k, v in adj_mats_orig.items()}
 num_edge_types = sum(edge_types.values())
-
-###########################################################
-#
-# Settings and placeholders
-#
-###########################################################
+print("Edge types:", "%d" % num_edge_types)
+# ============================================================================================= #
+# SETTINGS AND PLACEHOLDERS
 val_test_size = 0.05
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -214,13 +223,8 @@ flags.DEFINE_boolean('bias', True, 'Bias term.')
 PRINT_PROGRESS_EVERY = 150
 print("Defining placeholders")
 placeholders = construct_placeholders(edge_types)
-
-###########################################################
-#
-# Create minibatch iterator, model and optimizer
-#
-###########################################################
-
+# ============================================================================================= #
+# CREATE MINIBATCH ITERATOR, MODEL AND OPTIMIZER
 print("Create minibatch iterator")
 minibatch = EdgeMinibatchIterator(
     adj_mats=adj_mats_orig,
@@ -250,17 +254,12 @@ with tf.name_scope('optimizer'):
         batch_size=FLAGS.batch_size,
         margin=FLAGS.max_margin
     )
-    
 print("Initialize session")
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 feed_dict = {}
-
-###########################################################
-#
-# Train model
-#
-###########################################################
+# ============================================================================================= #
+# TRAINING
 print("Train model")
 for epoch in range(FLAGS.epochs):
 
@@ -296,5 +295,6 @@ for epoch in range(FLAGS.epochs):
 print("Optimization finished!")
 finish = time.time()
 memUse = ps.memory_info()
-print("Total time, virtual memory and RSS Memory:")
-print(finish-start, memUse.vms , memUse.rss)
+print("Total time:",finish-start)
+print('Virtual memory:', memUse.vms)
+print('RSS Memory:', memUse.rss)
