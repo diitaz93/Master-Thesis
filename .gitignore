@@ -7,6 +7,9 @@ outliers*
 Exploratory\ Analysis.ipynb
 *~
 *#
+data/clean_data/*
+data/original_data/*
+
 
 # Jupyter Notebook
 *.ipynb_checkpoints

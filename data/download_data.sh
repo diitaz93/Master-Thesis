@@ -31,3 +31,8 @@ else
     echo 'Data already downloaded'
     exit 0
 fi
+
+if [ ! -d "clean_data" ]; then
+    mkdir clean_data
+fi
+
