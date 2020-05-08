@@ -24,6 +24,7 @@ if [ ! -d "original_data" ]; then
     tar -xf bio-decagon-mono.tar.gz
     wget http://snap.stanford.edu/decagon/bio-decagon-effectcategories.tar.gz
     tar -xf bio-decagon-effectcategories.tar.gz
+    wget https://raw.githubusercontent.com/diitaz93/data/master/proteins.csv?token=AC2US3RH3JASLN626UFGJUK6X2DCO
     rm *.tar.gz
     
 else
