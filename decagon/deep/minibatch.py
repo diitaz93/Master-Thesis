@@ -76,11 +76,14 @@ class EdgeMinibatchIterator(object):
         return np.any(rows_close)
 # Divides the data corresponding to a given edge in test, train and validation
     def mask_test_edges(self, edge_type, type_idx):
+        # Coordinates of non-zero elements in adj matrix (edge)
         edges_all, _, _ = preprocessing.sparse_to_tuple(self.adj_mats[edge_type][type_idx])
+        # Number of test edges (1% of all edges or 20)
         num_test = max(20, int(np.floor(edges_all.shape[0] * self.val_test_size)))
+        # Number of train edges (1% of all edges or 20)
         num_val = max(20, int(np.floor(edges_all.shape[0] * self.val_test_size)))
 
-        all_edge_idx = list(range(edges_all.shape[0]))
+        all_edge_idx = list(range(edges_all.shape[0])) # orders and indexes edges
         np.random.shuffle(all_edge_idx)
 
         val_edge_idx = all_edge_idx[:num_val]
@@ -90,7 +93,7 @@ class EdgeMinibatchIterator(object):
         test_edges = edges_all[test_edge_idx]
 
         train_edges = np.delete(edges_all, np.hstack([test_edge_idx, val_edge_idx]), axis=0)
-
+        # Test edges
         test_edges_false = []
         while len(test_edges_false) < len(test_edges):
             if len(test_edges_false) % 1000 == 0:
@@ -103,7 +106,7 @@ class EdgeMinibatchIterator(object):
                 if self._ismember([idx_i, idx_j], test_edges_false):
                     continue
             test_edges_false.append([idx_i, idx_j])
-
+        # Validation edges
         val_edges_false = []
         while len(val_edges_false) < len(val_edges):
             if len(val_edges_false) % 1000 == 0:

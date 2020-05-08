@@ -124,7 +124,7 @@ gene_net = nx.planted_partition_graph(50, 10, 0.1, 0.02, seed=42)
 
 gene_adj = nx.adjacency_matrix(gene_net)
 gene_degrees = np.array(gene_adj.sum(axis=0)).squeeze()
-# Creates random adjacency matrix for geners and drugs
+# Creates random adjacency matrix for genes and drugs
 gene_drug_adj = sp.csr_matrix((10 * np.random.randn(n_genes, n_drugs) > 15).astype(int))
 drug_gene_adj = gene_drug_adj.transpose(copy=True)
 

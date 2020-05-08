@@ -148,7 +148,7 @@ for se in secombo2name.keys():
     for pair in combo2se.keys():
         if se in combo2se[pair]:
             d1,d2 = combo2stitch[pair]
-            m[drug2idx[d1],drug2idx[d2]] = 1
+            m[drug2idx[d1],drug2idx[d2]] = m[drug2idx[d2],drug2idx[d1]] = 1
     ddi_adj_list.append(sp.csr_matrix(m))    
 ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
 
