@@ -9,6 +9,10 @@
 # Author: Juan Sebastian Diaz, April 2020                                     #
 #---------------------------------------------------------------------------- #
 
+if [ ! -d "clean_data" ]; then
+    mkdir clean_data
+fi
+
 if [ ! -d "original_data" ]; then
     mkdir original_data
     cd original_data
@@ -25,6 +29,7 @@ if [ ! -d "original_data" ]; then
     wget http://snap.stanford.edu/decagon/bio-decagon-effectcategories.tar.gz
     tar -xf bio-decagon-effectcategories.tar.gz
     wget https://raw.githubusercontent.com/diitaz93/data/master/proteins.csv?token=AC2US3RH3JASLN626UFGJUK6X2DCO
+    mv proteins.csv?token=AC2US3RH3JASLN626UFGJUK6X2DCO proteins.csv
     rm *.tar.gz
     
 else
@@ -32,7 +37,5 @@ else
     exit 0
 fi
 
-if [ ! -d "clean_data" ]; then
-    mkdir clean_data
-fi
+
 
