@@ -289,7 +289,7 @@ for epoch in range(FLAGS.epochs):
             val_auc, val_auprc, val_apk = get_accuracy_scores(
                 minibatch.val_edges, minibatch.val_edges_false,
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
-             step_time = time.time() - t
+            step_time = time.time() - t
 
             print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" % batch_edge_type,
                   "train_loss=", "{:.5f}".format(train_cost),
