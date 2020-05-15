@@ -5,6 +5,7 @@ from operator import itemgetter
 from itertools import combinations
 import time
 import os
+import psutil
 
 import tensorflow as tf
 import numpy as np
@@ -16,6 +17,11 @@ from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
+
+# psutil BEGIN
+start = time.time() #in seconds
+pid = os.getpid()
+ps= psutil.Process(pid)
 
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -263,8 +269,10 @@ feed_dict = {}
 # Train model
 #
 ###########################################################
-
+f = open('training.txt', 'wb')
+acc_scores = np.array([None,None,None,None,None])
 print("Train model")
+f.write("Train model\n")
 for epoch in range(FLAGS.epochs):
 
     minibatch.shuffle()
@@ -288,21 +296,40 @@ for epoch in range(FLAGS.epochs):
             val_auc, val_auprc, val_apk = get_accuracy_scores(
                 minibatch.val_edges, minibatch.val_edges_false,
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
-
+            step_time = time.time() - t
+            
             print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" % batch_edge_type,
                   "train_loss=", "{:.5f}".format(train_cost),
                   "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
-                  "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(time.time() - t))
-
+                  "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
+            f.write("Epoch:%04d Iter:%04d Edge:%04d train_loss=%.5f val_roc=%.5f val_auprc=%.5f val_apk=%.5f time=%.5f\n"% 
+                 ((epoch + 1),(itr + 1), batch_edge_type, train_cost, val_auc, val_auprc, val_apk, step_time))
+            acc_scores = np.vstack((acc_scores,[val_auc,val_auprc,val_apk,train_cost,step_time]))
         itr += 1
 
+acc_scores=acc_scores[1:,:]
+np.save('./acc_scores.npy',acc_scores)
 print("Optimization finished!")
-
+f.write("Optimization finished!\n")
 for et in range(num_edge_types):
     roc_score, auprc_score, apk_score = get_accuracy_scores(
         minibatch.test_edges, minibatch.test_edges_false, minibatch.idx2edge_type[et])
     print("Edge type=", "[%02d, %02d, %02d]" % minibatch.idx2edge_type[et])
+    f.write("Edge type=[%02d, %02d, %02d]\n" % minibatch.idx2edge_type[et])
     print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(roc_score))
+    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, roc_score))
     print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(auprc_score))
+    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, auprc_score))
     print("Edge type:", "%04d" % et, "Test AP@k score", "{:.5f}".format(apk_score))
+    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, apk_score))
     print()
+memUse = ps.memory_info()
+print('Virtual memory:', memUse.vms)
+f.write('Virtual memory:%f\n'% memUse.vms)
+print('RSS Memory:', memUse.rss)
+f.write('RSS Memory:%f\n'% memUse.rss)
+total_time=time.time()-start
+np.save('./mem_and_time.npy',np.array([memUse.vms,memUse.rss,total_time]))
+print("Total time:",total_time)
+f.write("Total time:%f\n" % total_time)
+f.close()
