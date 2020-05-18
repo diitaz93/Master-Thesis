@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import defaultdict
 import networkx as nx
 
@@ -21,8 +22,8 @@ def load_combo_se(fname='bio-decagon-combo.csv'):
     fin.close()
     n_interactions = sum([len(v) for v in combo2se.values()])
     drug2idx = {drug : n for n,drug in enumerate(drugs)}
-    print 'Drug combinations: %d Side effects: %d' % (len(combo2stitch), len(se2name))
-    print 'Drug-drug interactions: %d' % (n_interactions)
+    print ('Drug combinations: %d Side effects: %d' % (len(combo2stitch), len(se2name)))
+    print ('Drug-drug interactions: %d' % (n_interactions))
     return combo2stitch, combo2se, se2name, drug2idx
 
 # Returns networkx graph of the PPI network 
@@ -34,8 +35,8 @@ def load_ppi(fname='bio-decagon-ppi.csv'):
         gene_id1, gene_id2= line.strip().split(',')
         edges += [[gene_id1,gene_id2]]
     nodes = set([u for e in edges for u in e])
-    print 'Number of ppi interactions: %d' % len(edges)
-    print 'Number of genes: %d' % len(nodes)
+    print ('Number of ppi interactions: %d' % len(edges))
+    print ('Number of genes: %d' % len(nodes))
     net = nx.Graph()
     net.add_edges_from(edges)
     net.remove_nodes_from(nx.isolates(net))
@@ -67,7 +68,7 @@ def load_targets(fname='bio-decagon-targets.csv'):
         stitch_id, gene = line.strip().split(',')
         stitch2proteins[stitch_id].add(gene)
         count += 1
-    print 'Number fo DTI interactions: %d' % count
+    print ('Number fo DTI interactions: %d' % count)
     return stitch2proteins
 
 # Returns dictionary from side effect to disease class of that side effect,
