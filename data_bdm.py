@@ -7,12 +7,10 @@ import os
 import psutil
 import shelve
 from pybdm import BDM
-from pybdm.utils import decompose_dataset
-from joblib import Parallel, delayed
 from node import NodePerturbationExperiment
 
 # psutil & time BEGIN
-start = time.time() #in seconds
+start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
 
@@ -21,22 +19,32 @@ for key in input_data:
     globals()[key]=input_data[key]
 input_data.close()
 print('Input data loaded')
+
 bdm = BDM(ndim=2)
-node_per = NodePerturbationExperiment(bdm,np.array(ppi_adj.todense())
-                                      ,metric='bdm',bipartite_network=False)
-bdm_ppi = node_per.run()
+ppi_perturbation = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=False,
+                                              parallel=True,jobs=16)
+ppi_perturbation.set_data(np.array(ppi_adj.todense()))
+print("Initial BDM calculated")
+bdm_ppi = ppi_perturbation.run()
 print('BDM for PPI calculated')
-node_per = NodePerturbationExperiment(bdm,np.array(dti_adj.todense())
-                                      ,metric='bdm',bipartite_network=True)
-bdm_drugs_dti,bdm_genes_dti = node_per.run()
+
+dti_perturbation = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=True, 
+                                              parallel=True,jobs=16)
+dti_perturbation.set_data(np.array(dti_adj.todense()))
+print("Initial BDM calculated")
+bdm_drugs_dti,bdm_genes_dti = dti_perturbation.run()
 print('BDM for DTI calculated')
+
 bdm_ddi_list = []
+ddi_perturbation = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=False,
+                                              parallel=True,jobs=16)
 for i in ddi_adj_list:
-    node_per = NodePerturbationExperiment(bdm,np.array(i.todense())
-                                          ,metric='bdm',bipartite_network=False)
+    dti_perturbation.set_data(np.array(i.todense()))
+    print('set data')
+    bdm_ddi_list.append(dti_perturbation.run())
     print('next ddi matrix')
-    bdm_ddi_list.append(node_per.run())
 print('BDM for DDI calculated')
+
 memUse = ps.memory_info()
 total_time=time.time()-start
 print('Time and memory calculated')

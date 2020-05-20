@@ -4,7 +4,6 @@ from random import choice
 import numpy as np
 import warnings
 from joblib import Parallel, delayed
-from pybdm.utils import decompose_dataset
 
 
 class NodePerturbationExperiment:
@@ -108,70 +107,32 @@ class NodePerturbationExperiment:
         self.X = X
         if not self.bipartite_network and self.shape[0]!=self.shape[1]:
             raise ValueError("'X' has to be a squared matrix for non-bipartite network")
-        if self.parallel:
-            dim1, dim2 = self.shape
-            rem1 = dim1%self.jobs
-            rem2 = dim2%self.jobs
-            sub_dim1 = int((dim1-rem1)/self.jobs)
-            sub_dim2 = int((dim2-rem2)/self.jobs)
-            counters = Parallel(n_jobs=self.jobs) \
-            (delayed(self.bdm.decompose_and_count)(d) for d in decompose_dataset
-             (self.X, (sub_dim1, sub_dim2)))
-            if self.metric == 'bdm':
-                self._value = self.bdm.compute_bdm(*counters)
-            elif self.metric == 'ent':
-                self._value = self.bdm.compute_ent(*counters)
-        else:
-            if self.metric == 'bdm':
-                self._value = self.bdm.bdm(self.X)
-            elif self.metric == 'ent':
-                self._value = self.bdm.ent(self.X)
+        if self.metric == 'bdm':
+            self._value = self.bdm.bdm(self.X)
+        elif self.metric == 'ent':
+            self._value = self.bdm.ent(self.X)   
 
-            
-
-    def _update_bdm(self, idx, axis, keep_changes, bipartite_network):
+    def _update_bdm(self, idx, axis, keep_changes):
         old_bdm = self._value
-        if not bipartite_network:
+        if not self.bipartite_network:
             newX = np.delete(self.X,idx,axis=0)
             newX = np.delete(newX,idx,axis=1)
         else:
             newX = np.delete(self.X,idx,axis=axis)
-        if self.parallel:
-            dim1, dim2 = newX.shape
-            rem1 = dim1%self.jobs
-            rem2 = dim2%self.jobs
-            sub_dim1 = int((dim1-rem1)/self.jobs)
-            sub_dim2 = int((dim2-rem2)/self.jobs)
-            counters = Parallel(n_jobs=self.jobs) \
-            (delayed(self.bdm.decompose_and_count)(d) for d in decompose_dataset
-             (newX, (sub_dim1, sub_dim2)))
-            new_bdm = self.bdm.compute_bdm(*counters)
-        else:
-            new_bdm = self.bdm.bdm(newX)
+        new_bdm = self.bdm.bdm(newX)
         if keep_changes:
             self.X = newX
             self._value = new_bdm
         return new_bdm - old_bdm
 
-    def _update_ent(self, idx, axis, keep_changes, bipartite_network):
+    def _update_ent(self, idx, axis, keep_changes):
         old_ent = self._value
-        if not bipartite_network:
+        if not self.bipartite_network:
             newX = np.delete(self.X,idx,axis=0)
             newX = np.delete(newX,idx,axis=1)
         else:
             newX = np.delete(self.X,idx,axis=axis)
-        if self.parallel:
-            dim1, dim2 = newX.shape
-            rem1 = dim1%self.jobs
-            rem2 = dim2%self.jobs
-            sub_dim1 = int((dim1-rem1)/self.jobs)
-            sub_dim2 = int((dim2-rem2)/self.jobs)
-            counters = Parallel(n_jobs=self.jobs) \
-            (delayed(self.bdm.decompose_and_count)(d) for d in decompose_dataset
-             (newX, (sub_dim1, sub_dim2)))
-            new_bdm = self.bdm.compute_ent(*counters)
-        else:
-            new_ent = self.bdm.ent(newX)
+        new_ent = self.bdm.ent(newX)
         if keep_changes:
             self.X = newX
             self._value = new_ent
@@ -250,9 +211,11 @@ class NodePerturbationExperiment:
                 warnings.warn("Indices in idx2 ignored, changing only indices in idx1")
             if idx1 is None:
                 idx1 = np.arange(self.shape[0])
-            output = np.array([self._method(x,axis=0, keep_changes=False,
-                                            bipartite_network=self.bipartite_network)
-                               for x in idx1])
+            if self.parallel:
+                output = Parallel(n_jobs=self.jobs)(delayed(self._method)
+                                                    (x,axis=0,keep_changes=False) for x in idx1)
+            else:
+                output = np.array([self._method(x,axis=0, keep_changes=False)for x in idx1])
             return output
         else:
             if idx1 == [] and idx2 == []:
@@ -262,15 +225,19 @@ class NodePerturbationExperiment:
             if idx2 is None:
                 idx2 = np.arange(self.shape[1])
             if idx1 != []:
-                out_rows = np.array([self._method(x, axis=0,keep_changes=False,
-                                                  bipartite_network=self.bipartite_network)
-                                     for x in idx1])
+                if self.parallel:
+                    out_rows = Parallel(n_jobs=self.jobs)(delayed(self._method)
+                                                    (x,axis=0,keep_changes=False) for x in idx1)
+                else:
+                    out_rows = np.array([self._method(x, axis=0,keep_changes=False)for x in idx1])
                 if idx2 == []:
                     return out_rows
             if idx2 != []:
-                out_cols = np.array([self._method(x, axis=1,keep_changes=False,
-                                                  bipartite_network=self.bipartite_network)
-                                     for x in idx2])
+                if self.parallel:
+                    out_cols = Parallel(n_jobs=self.jobs)(delayed(self._method)
+                                                          (x,axis=1,keep_changes=False) for x in idx2)
+                else:
+                    out_cols = np.array([self._method(x, axis=1,keep_changes=False)for x in idx2])
                 if idx1 == []:
                     return out_cols
             return out_rows, out_cols
