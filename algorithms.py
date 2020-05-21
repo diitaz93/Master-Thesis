@@ -57,6 +57,7 @@ class PerturbationExperiment:
         """Initialization method."""
         self.bdm = bdm
         self.metric = metric
+        self.bipartite_network = bipartite_network
         self._counter = None
         self._value = None
         self._ncounts = None
@@ -272,3 +273,35 @@ class PerturbationExperiment:
             axis=1,
             arr=np.column_stack((idx, values))
         )
+
+    def node_equivalent(self):
+        """Returns the average complexity value of the edges for each node.
+
+        Returns
+        -------
+        array or tuple of arrays :
+            If bipartite_network=True, it returns the value for each node of the corresponding
+            set, being the row nodes the ones of the first array and the column nodes of the
+            second. If bipartite_network=False, the matrix is symmetric and therefore the 
+            row and column nodes are the same, returning only one array.
+
+        Examples
+        --------
+        >>> from pybdm import BDM
+        >>> bdm = BDM(ndim=2)
+        >>> b = np.random.randint(0,2,(10,10))
+        >>> X = ((b + b.T)/2).astype(int)
+        >>> perturbation = PerturbationExperiment(bdm, X, bipartite_network=False)
+        >>> perturbation.node_equivalent()
+        array([-0.96990006,  0.51649434, -0.37643584,  0.70535874, -0.16374676,
+        1.02257465, -0.32975466,  0.63645683,  0.        ,  0.        ])
+        """
+        pert = self.run().reshape(self.shape)
+        if self.bipartite_network:
+            row_nodes = np.mean(pert,axis=1)
+            col_nodes = np.mean(pert,axis=0)
+            return row_nodes,col_nodes
+        else:
+            return np.mean(pert,axis=0)
+            
+        
