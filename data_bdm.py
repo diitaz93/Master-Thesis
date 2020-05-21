@@ -19,6 +19,7 @@ for key in input_data:
     globals()[key]=input_data[key]
 input_data.close()
 print('Input data loaded')
+bdm = BDM(ndim=2)
 # PPI
 # Node perturbation
 ppi_nodeper = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=False,
