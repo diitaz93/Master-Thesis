@@ -1,4 +1,18 @@
-#Python 3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ============================================================================================= #
+# ddi_bdm.py                                                                                    #
+# Author: Juan Sebastian Diaz Boada                                                             #
+# Creation Date: 23/05/2020                                                                     #
+# ============================================================================================= #
+"""
+Calculates the algoritmic complexity of the drug interaction network of the DECAGON dataset. The 
+dataset is given as a list of adjacency matrices corresponding to the connectivity per each joint
+side effect. The code uses the package pybdm to calculate the complexity contribution of each 
+node and its corresponding edges per side effect. The result is a list of feature vectors, 
+exported as a python shelf.  
+"""
+# ============================================================================================= #
 import numpy as np
 import scipy.sparse as sp
 import time
@@ -8,8 +22,7 @@ import shelve
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
-
-# psutil & time BEGIN
+# Settings and loading of the list of adj matrices
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
@@ -19,7 +32,8 @@ print('Input data loaded')
 jobs = 8
 usrnm = getuser()
 bdm = BDM(ndim=2)
-# DDI
+# ============================================================================================= #
+# CALCULATION
 nodebdm_ddi_list = []
 edgebdm_ddi_list = []
 ddi_nodeper = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=False,
@@ -37,7 +51,8 @@ for i in ddi_adj_list:
     count += 1
     print(prog,'% completed')
 print('Node and Edge BDM for DDI calculated')
-
+# ============================================================================================= #
+# EXPORTING
 drugs = np.shape(ddi_adj_list[0])[0]
 memUse = ps.memory_info()
 total_time=time.time()-start

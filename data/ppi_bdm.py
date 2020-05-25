@@ -1,4 +1,17 @@
-#Python 3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ============================================================================================= #
+# ppi_bdm.py                                                                                    #
+# Author: Juan Sebastian Diaz Boada                                                             #
+# Creation Date: 23/05/2020                                                                     #
+# ============================================================================================= #
+"""
+Calculates the algoritmic complexity of the gene network of the DECAGON dataset. The dataset is
+given as an adjacency matrix. The code uses the package pybdm to calculate the complexity
+contribution of each node and its corresponding edges. The calculated feature vector along with 
+relevant data are exported as a python shelf.
+"""
+# ============================================================================================= #
 import numpy as np
 import scipy.sparse as sp
 import time
@@ -8,8 +21,7 @@ import shelve
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
-
-# psutil & time BEGIN
+# Settings and loading of adj matrix
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
@@ -19,7 +31,8 @@ print('Input data loaded')
 jobs = 8
 usrnm = getuser()
 bdm = BDM(ndim=2)
-# PPI
+# ============================================================================================= #
+# CALCULATION
 # Node perturbation
 ppi_nodeper = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=False,
                                          parallel=True,jobs=jobs)
@@ -33,7 +46,8 @@ ppi_edgeper.set_data(np.array(ppi_adj.todense()))
 print("Initial BDM calculated for nodes")
 edgebdm_ppi = ppi_edgeper.node_equivalent()
 print('Edge BDM for PPI calculated')
-
+# ============================================================================================= #
+# EXPORTING
 genes = len(nodebdm_ppi)
 memUse = ps.memory_info()
 total_time=time.time()-start

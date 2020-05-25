@@ -1,4 +1,18 @@
-#Python 3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ============================================================================================= #
+# dti_bdm.py                                                                                    #
+# Author: Juan Sebastian Diaz Boada                                                             #
+# Creation Date: 23/05/2020                                                                     #
+# ============================================================================================= #
+"""
+Calculates the algoritmic complexity of the gene-drug network of the DECAGON dataset. The dataset
+is given as a bipartite adjacency matrix. The code uses the package pybdm to calculate the 
+complexity contribution of each node and its corresponding edges in both axis of the matrix 
+separately. The calculated feature vectors are along with relevant data are exported as a python 
+shelf.
+"""
+# ============================================================================================= #
 import numpy as np
 import scipy.sparse as sp
 import time
@@ -8,8 +22,7 @@ import shelve
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
-
-# psutil & time BEGIN
+# Settings and loading of adj matrix
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
@@ -19,7 +32,8 @@ print('Input data loaded')
 jobs = 8
 usrnm = getuser()
 bdm = BDM(ndim=2)
-# DTI
+# ============================================================================================= #
+# CALCULATION
 # Node perturbation
 dti_nodeper = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=True, 
                                          parallel=True,jobs=jobs)
@@ -33,7 +47,8 @@ dti_edgeper.set_data(np.array(dti_adj.todense()))
 print("Initial BDM calculated for nodes")
 edgebdm_genes_dti, edgebdm_drugs_dti = dti_edgeper.node_equivalent()
 print('Edge BDM for DTI calculated')
-
+# ============================================================================================= #
+# EXPORTING
 genes,drugs = dti_adj.shape
 memUse = ps.memory_info()
 total_time=time.time()-start

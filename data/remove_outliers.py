@@ -7,9 +7,11 @@
 # ============================================================================================= #
 """
 Imports original DECAGON database + protein features and writes out new data files containing a 
-consistent database. The new database has all the unlinked nodes (outliers) removed. In addition, normalizes the protein features corresponding to the number of helices, strands and turns to the
-average and median values of the protein length. All of the nodes (genes, drugs) from the DTI database are included in their respective interaction databases (PPI, PF; and DDI, DSE respectively) 
-but not necessarily the opposite. 
+consistent database. The new database has all the unlinked nodes (outliers) removed. In addition,
+normalizes the protein features corresponding to the number of helices, strands and turns to the
+average and median values of the protein length. All of the nodes (genes, drugs) from the DTI 
+database are included in their respective interaction databases (PPI, PF; and DDI, DSE 
+respectively) but not necessarily the opposite. 
 """
 # ============================================================================================= #
 import numpy as np
