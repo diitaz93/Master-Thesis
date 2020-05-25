@@ -1,0 +1,53 @@
+#Python 3
+import numpy as np
+import scipy.sparse as sp
+import time
+import os
+import psutil
+import shelve
+from pybdm import BDM
+from algorithms import PerturbationExperiment, NodePerturbationExperiment
+from getpass import getuser
+
+# psutil & time BEGIN
+start = time.time() 
+pid = os.getpid()
+ps= psutil.Process(pid)
+with shelve.open('./data_structures/decagon') as dec:
+    ddi_adj_list = dec['ddi_adj_list']
+print('Input data loaded')
+jobs = 8
+usrnm = getuser()
+bdm = BDM(ndim=2)
+# DDI
+nodebdm_ddi_list = []
+edgebdm_ddi_list = []
+ddi_nodeper = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=False,
+                                          parallel=True,jobs=jobs)
+ddi_edgeper = PerturbationExperiment(bdm, bipartite_network=False)
+total = len(ddi_adj_list)
+count=1
+for i in ddi_adj_list:
+    ddi_nodeper.set_data(np.array(i.todense()))
+    ddi_edgeper.set_data(np.array(i.todense()))
+    print('set data')
+    nodebdm_ddi_list.append(ddi_nodeper.run())
+    edgebdm_ddi_list.append(ddi_edgeper.node_equivalent())
+    prog = count*100/total
+    count += 1
+    print(prog,'% completed')
+print('Node and Edge BDM for DDI calculated')
+
+drugs = np.shape(ddi_adj_list[0])[0]
+memUse = ps.memory_info()
+total_time=time.time()-start
+filename = './data_structures/ddi_bdm_se'+str(total)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)
+output_data = shelve.open(filename,'n',protocol=2)
+output_data['nodebdm_ddi_list'] = nodebdm_ddi_list
+output_data['edgebdm_ddi_list'] = edgebdm_ddi_list
+output_data['vms'] = memUse.vms
+output_data['rss'] = memUse.rss
+output_data['total_time'] = total_time
+output_data['jobs'] = jobs
+output_data.close()
+print('Output data exported')

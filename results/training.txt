@@ -1,2 +1,0 @@
-Train model
-Epoch:0001 Iter:0001 Edge:0002 train_loss=718.51343 val_roc=0.84981 val_auprc=0.81573 val_apk=0.81708 time=4.75166
