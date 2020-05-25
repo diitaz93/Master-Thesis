@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import shelve
+import datetime
 N = int(sys.argv[1]) # Number of side effects
 # Import databases as pandas dataframes
 PPI = pd.read_csv('clean_data/new-decagon-ppi.csv',sep=',')
@@ -145,7 +146,12 @@ print('New number of proteins with features:', len(PF.index))
 print('\n')
 # ============================================================================================= #
 # SAVING DATA STRUCTURES
-data = shelve.open('./data_structures/decagon','n',protocol=2)
+now = datetime.datetime.now() # current date and time
+year = now.strftime("%Y")
+month = now.strftime("%m")
+day = now.strftime("%d")
+filename = './data_structures/decagon_se'+str(N)+'_'+year+'_'+month+'_'+day
+data = shelve.open(filename,'n',protocol=2)
 # Dictionaries
 data['gene2idx'] = gene2idx
 data['drug2idx'] = drug2idx

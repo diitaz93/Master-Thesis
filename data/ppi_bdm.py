@@ -16,16 +16,18 @@ import numpy as np
 import scipy.sparse as sp
 import time
 import os
+import sys
 import psutil
 import shelve
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
 # Settings and loading of adj matrix
+input_file = str(sys.argv[1])
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
-with shelve.open('./data_structures/decagon') as dec:
+with shelve.open(input_file) as dec:
     ppi_adj = dec['ppi_adj']
 print('Input data loaded')
 jobs = 8
