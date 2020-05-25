@@ -39,13 +39,13 @@ dti_nodeper = NodePerturbationExperiment(bdm,metric='bdm',bipartite_network=True
                                          parallel=True,jobs=jobs)
 dti_nodeper.set_data(np.array(dti_adj.todense()))
 print("Initial BDM calculated for nodes")
-nodebdm_genes_dti,nodebdm_drugs_dti = dti_nodeper.run()
+nodebdm_drugs_dti,nodebdm_genes_dti = dti_nodeper.run()
 print('BDM for DTI calculated')
 # Edge perturbation
 dti_edgeper = PerturbationExperiment(bdm, bipartite_network=True)
 dti_edgeper.set_data(np.array(dti_adj.todense()))
 print("Initial BDM calculated for nodes")
-edgebdm_genes_dti, edgebdm_drugs_dti = dti_edgeper.node_equivalent()
+edgebdm_drugs_dti, edgebdm_genes_dti = dti_edgeper.node_equivalent()
 print('Edge BDM for DTI calculated')
 # ============================================================================================= #
 # EXPORTING

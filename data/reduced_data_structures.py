@@ -9,8 +9,12 @@
 Imports the treated (outlier-free) dataset and samples a consistent small subset to be run in 
 small machines. The generated dataset is limited to a number of drug-drug interactions (side 
 effects) specified by the variable N entered as argument. From the reduced dataset, it creates 
-the needed data structures to be used in BDM calculations and DECAGON training, saved as a .dat
-file.
+the needed data structures to be used in BDM calculations and DECAGON training.
+
+Parameters
+----------
+number of side effects : int
+    Number of joint drug side effects to be chosen from the complete dataset.
 
 """
 # ============================================================================================= #
