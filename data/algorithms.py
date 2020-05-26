@@ -511,8 +511,8 @@ class NodePerturbationExperiment:
             if idx1 is None:
                 idx1 = np.arange(self.shape[0])
             if self.parallel:
-                output = Parallel(n_jobs=self.jobs)(delayed(self._method)
-                                                    (x,axis=0,keep_changes=False) for x in idx1)
+                output = np.array(Parallel(n_jobs=self.jobs)(delayed(self._method)
+                                                    (x,axis=0,keep_changes=False) for x in idx1))
             else:
                 output = np.array([self._method(x,axis=0, keep_changes=False)for x in idx1])
             return output
@@ -525,16 +525,17 @@ class NodePerturbationExperiment:
                 idx2 = np.arange(self.shape[1])
             if idx1 != []:
                 if self.parallel:
-                    out_rows = Parallel(n_jobs=self.jobs)(delayed(self._method)
-                                                    (x,axis=0,keep_changes=False) for x in idx1)
+                    out_rows = np.array(Parallel(n_jobs=self.jobs)(delayed(self._method)
+                                                    (x,axis=0,keep_changes=False) for x in idx1))
                 else:
                     out_rows = np.array([self._method(x, axis=0,keep_changes=False)for x in idx1])
                 if idx2 == []:
                     return out_rows
             if idx2 != []:
                 if self.parallel:
-                    out_cols = Parallel(n_jobs=self.jobs)(delayed(self._method)
-                                                          (x,axis=1,keep_changes=False) for x in idx2)
+                    out_cols = np.array(Parallel(n_jobs=self.jobs)
+                                        (delayed(self._method)(x,axis=1,keep_changes=False)
+                                         for x in idx2))
                 else:
                     out_cols = np.array([self._method(x, axis=1,keep_changes=False)for x in idx2])
                 if idx1 == []:
