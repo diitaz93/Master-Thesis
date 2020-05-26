@@ -35,7 +35,7 @@ ps= psutil.Process(pid)
 with open(input_file, 'rb') as f:
     ppi_adj = pickle.load(f)['ppi_adj']
 print('Input data loaded')
-jobs = 8
+jobs = 48
 usrnm = getuser()
 bdm = BDM(ndim=2)
 # ============================================================================================= #
@@ -62,10 +62,10 @@ filename = './data_structures/ppi_bdm_genes'+str(genes)+'_'+usrnm+str(jobs)
 output_data = {}
 output_data['nodebdm_ppi'] = nodebdm_ppi
 output_data['edgebdm_ppi'] = edgebdm_ppi
-output_data['vms'] = memUse.vms
-output_data['rss'] = memUse.rss
-output_data['total_time'] = total_time
-output_data['jobs'] = jobs
+output_data['vms_ppi'] = memUse.vms
+output_data['rss_ppi'] = memUse.rss
+output_data['time_ppi'] = total_time
+output_data['jobs_ppi'] = jobs
 with open(filename, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported')
