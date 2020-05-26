@@ -35,7 +35,7 @@ ps= psutil.Process(pid)
 with open(input_file, 'rb') as f:
     ppi_adj = pickle.load(f)['ppi_adj']
 print('Input data loaded')
-jobs = 64
+jobs = 48
 usrnm = getuser()
 bdm = BDM(ndim=2)
 # ============================================================================================= #
