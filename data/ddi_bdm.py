@@ -67,10 +67,10 @@ filename = './data_structures/ddi_bdm_se'+str(total)+'_drugs'+str(drugs)+'_'+usr
 output_data = {}
 output_data['nodebdm_ddi_list'] = nodebdm_ddi_list
 output_data['edgebdm_ddi_list'] = edgebdm_ddi_list
-output_data['vms'] = memUse.vms
-output_data['rss'] = memUse.rss
-output_data['total_time'] = total_time
-output_data['jobs'] = jobs
+output_data['vms_ddi'] = memUse.vms
+output_data['rss_ddi'] = memUse.rss
+output_data['time_ddi'] = total_time
+output_data['jobs_ddi'] = jobs
 with open(filename, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported')
