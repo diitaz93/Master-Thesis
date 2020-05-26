@@ -65,10 +65,10 @@ output_data['nodebdm_drugs_dti'] = nodebdm_drugs_dti
 output_data['nodebdm_genes_dti'] = nodebdm_genes_dti
 output_data['edgebdm_drugs_dti'] = edgebdm_drugs_dti
 output_data['edgebdm_genes_dti'] = edgebdm_genes_dti
-output_data['vms'] = memUse.vms
-output_data['rss'] = memUse.rss
-output_data['total_time'] = total_time
-output_data['jobs'] = jobs
+output_data['vms_dti'] = memUse.vms
+output_data['rss_dti'] = memUse.rss
+output_data['time_dti'] = total_time
+output_data['jobs_dti'] = jobs
 with open(filename, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported')
