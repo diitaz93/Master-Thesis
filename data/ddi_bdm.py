@@ -11,6 +11,11 @@ dataset is given as a list of adjacency matrices corresponding to the connectivi
 side effect. The code uses the package pybdm to calculate the complexity contribution of each 
 node and its corresponding edges per side effect. The result is a list of feature vectors, 
 exported as a python shelf.  
+
+Parameters
+----------
+path : string
+    (Relative) path to the file of data structures.
 """
 # ============================================================================================= #
 import numpy as np
@@ -19,7 +24,7 @@ import time
 import os
 import sys
 import psutil
-import shelve
+import pickle
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
@@ -28,8 +33,8 @@ input_file = str(sys.argv[1])
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
-with shelve.open(input_file) as dec:
-    ddi_adj_list = dec['ddi_adj_list']
+with open(input_file, 'rb') as f:
+    ddi_adj_list = pickle.load(f)['ddi_adj_list']
 print('Input data loaded')
 jobs = 8
 usrnm = getuser()
@@ -59,12 +64,13 @@ drugs = np.shape(ddi_adj_list[0])[0]
 memUse = ps.memory_info()
 total_time=time.time()-start
 filename = './data_structures/ddi_bdm_se'+str(total)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)
-output_data = shelve.open(filename,'n',protocol=2)
+output_data = {}
 output_data['nodebdm_ddi_list'] = nodebdm_ddi_list
 output_data['edgebdm_ddi_list'] = edgebdm_ddi_list
 output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 output_data['total_time'] = total_time
 output_data['jobs'] = jobs
-output_data.close()
+with open(filename, 'wb') as f:
+    pickle.dump(output_data, f, protocol=3)
 print('Output data exported')

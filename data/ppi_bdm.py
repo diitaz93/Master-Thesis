@@ -10,6 +10,11 @@ Calculates the algoritmic complexity of the gene network of the DECAGON dataset.
 given as an adjacency matrix. The code uses the package pybdm to calculate the complexity
 contribution of each node and its corresponding edges. The calculated feature vector along with 
 relevant data are exported as a python shelf.
+
+Parameters
+----------
+path : string
+    (Relative) path to the file of data structures.
 """
 # ============================================================================================= #
 import numpy as np
@@ -18,7 +23,7 @@ import time
 import os
 import sys
 import psutil
-import shelve
+import pickle
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
@@ -27,8 +32,8 @@ input_file = str(sys.argv[1])
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
-with shelve.open(input_file) as dec:
-    ppi_adj = dec['ppi_adj']
+with open(input_file, 'rb') as f:
+    ppi_adj = pickle.load(f)['ppi_adj']
 print('Input data loaded')
 jobs = 8
 usrnm = getuser()
@@ -54,12 +59,13 @@ genes = len(nodebdm_ppi)
 memUse = ps.memory_info()
 total_time=time.time()-start
 filename = './data_structures/ppi_bdm_genes'+str(genes)+'_'+usrnm+str(jobs)
-output_data = shelve.open(filename,'n',protocol=2)
+output_data = {}
 output_data['nodebdm_ppi'] = nodebdm_ppi
 output_data['edgebdm_ppi'] = edgebdm_ppi
 output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 output_data['total_time'] = total_time
 output_data['jobs'] = jobs
-output_data.close()
+with open(filename, 'wb') as f:
+    pickle.dump(output_data, f, protocol=3)
 print('Output data exported')

@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-import shelve
+import pickle
 import datetime
 N = int(sys.argv[1]) # Number of side effects
 # Import databases as pandas dataframes
@@ -150,8 +150,8 @@ now = datetime.datetime.now() # current date and time
 year = now.strftime("%Y")
 month = now.strftime("%m")
 day = now.strftime("%d")
-filename = './data_structures/decagon_se'+str(N)+'_'+year+'_'+month+'_'+day
-data = shelve.open(filename,'n',protocol=2)
+filename = './data_structures/DS_se'+str(N)+'_'+year+'_'+month+'_'+day
+data = {}
 # Dictionaries
 data['gene2idx'] = gene2idx
 data['drug2idx'] = drug2idx
@@ -170,4 +170,5 @@ data['drug_feat'] = drug_feat
 # PF
 data['prot_feat'] = prot_feat
 data['norm_prot_feat'] = norm_prot_feat
-data.close()
+with open(filename, 'wb') as f:
+    pickle.dump(data, f, protocol=3)
