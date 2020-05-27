@@ -27,6 +27,7 @@ import psutil
 import pickle
 import os
 from pybdm import BDM
+from pybdm.partitions import PartitionRecursive
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
 # Settings and loading of adj matrix
@@ -39,7 +40,7 @@ with open(input_file, 'rb') as f:
 print('Input data loaded')
 jobs = 8
 usrnm = getuser()
-bdm = BDM(ndim=2)
+bdm = BDM(ndim=2,partition=PartitionRecursive)
 # ============================================================================================= #
 # CALCULATION
 # Node perturbation
