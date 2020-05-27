@@ -50,16 +50,16 @@ PPI_genes = pd.unique(np.hstack((PPI['Gene 1'].values,PPI['Gene 2'].values)))
 PF = PF[PF['GeneID'].apply(int).isin(PPI_genes)]
 new_genes_ppi = len(pd.unique(PPI[["Gene 1", "Gene 2"]].values.ravel()))
 new_genes_pf = len(pd.unique(PF['GeneID'].values))
-new_ppi = len(PPI.index)
-new_pf = len(PF.index)
 # ============================================================================================= #
 # REDUCE DDI AND DSE DATABASES TO COMMON DRUGS ONLY
 # DDI drugs
 DDI_drugs = pd.unique(DDI[["STITCH 1", "STITCH 2"]].values.ravel())
 orig_drugs_ddi = len(DDI_drugs) # Original number of drugs
+orig_se_combo = len(pd.unique(DDI['Polypharmacy Side Effect'].values))
 # Drugs with single side effects
 DSE_drugs = pd.unique(DSE['STITCH'].values)
-orig_drugs_dse = len(DSE_drugs) # Original number of drugs
+orig_drug_dse = len(DSE_drugs) # Original number of drugs
+orig_se_mono = len(pd.unique(DSE['Side Effect Name']))
 # Calculate the instersection of the DDI and DSE
 # (i.e., the drugs in the intercation network that have single side effect)
 inter_drugs = np.intersect1d(DDI_drugs,DSE_drugs,assume_unique=True)
@@ -72,14 +72,13 @@ DDI_drugs = pd.unique(DDI[["STITCH 1", "STITCH 2"]].values.ravel())
 DSE = DSE[DSE['STITCH'].isin(DDI_drugs)]
 new_drugs_ddi = len(pd.unique(DDI[['STITCH 1','STITCH 2']].values.ravel()))
 new_drugs_dse = len(pd.unique(DSE['STITCH'].values))
-new_ddi = len(DDI.index)
-new_dse = len(DSE.index)
+new_se_combo = len(pd.unique(DDI['Polypharmacy Side Effect'].values))
+new_se_mono = len(pd.unique(DSE['Side Effect Name']))
 # ============================================================================================= #
 # SELECT ONLY ENTRIES FROM DTI DATABASE THAT ARE PRESENT IN PREVIOUS REDUCED DATABASES
 orig_genes_dti = len(pd.unique(DTI['Gene'].values))
 orig_drugs_dti = len(pd.unique(DTI['STITCH'].values))
 DTI = DTI[np.logical_and(DTI['STITCH'].isin(DDI_drugs),DTI['Gene'].isin(PPI_genes))]
-new_dti = len(DTI.index)
 new_genes_dti = len(pd.unique(DTI['Gene'].values))
 new_drugs_dti = len(pd.unique(DTI['STITCH'].values))
 # ============================================================================================= #
@@ -96,34 +95,47 @@ PF['Normalized Strands(Mean)'] = norm_strand_avg
 PF['Normalized Turns(Mean)'] = norm_turns_avg
 # ============================================================================================= #
 # CONTROL PRINTING
+# Interactions (edges)
+print('Interactions (edges)')
 print ('Original number of PPI interactions',orig_ppi)
-print ('New number of PPI interactions',new_ppi)
+print ('New number of PPI interactions',len(PPI.index))
 print('\n')
 print ('Original number of DTI interactions',orig_dti)
-print ('New number of DTI interactions',new_dti)
+print ('New number of DTI interactions',len(DTI.index))
 print('\n')
 print ('Original number of DDI interactions',orig_ddi)
-print ('New number of DDI interactions',new_ddi)
+print ('New number of DDI interactions', len(DDI.index))
 print('\n')
-print ('Original number of proteins with features',orig_pf)
-print ('New number of proteins with features',new_pf)
+print ('Original number of DSE interactions',orig_dse)
+print('New number of DSE interactions',len(DSE.index))
 print('\n')
-print ('Original number of single side effect interactions',orig_dse)
-print('New number of single side effect interactions',new_dse)
+# Drugs and genes (nodes)
+print('Drugs and genes (nodes)')
+print("Original number of drugs in DSE:",orig_drug_dse)
+print("New number of drugs in DSE:",new_drugs_dse)
 print('\n')
-print("Original number of unique genes in PPI:",orig_genes_ppi)
-print("New number of unique genes in PPI:",new_genes_ppi)
-print("Original number of genes whose proteins have features:",orig_genes_pf)
-print("New number of genes whose proteins have features:",new_genes_pf)
-print("Original number of unique genes in DTI",orig_genes_dti)
-print("New number of unique genes in DTI",new_genes_dti)
+print("Original number of genes in PF:",orig_genes_pf)
+print("New number of genes in PF:",new_genes_pf)
 print('\n')
-print("Original number of unique drugs in DDI:",orig_drugs_ddi)
-print("New number of unique drugs in DDI:",new_drugs_ddi)
-print("Original number of drugs with single side effects:",orig_drugs_dse)
-print("New number of drugs with single side effects:",new_drugs_dse)
-print("Original number of unique drugs in DTI",orig_drugs_dti)
-print("New number of unique drugs in DTI",new_drugs_dti)
+print("Original number drugs in DTI",orig_drugs_dti)
+print("New number of drugs in DTI",new_drugs_dti)
+print('\n')
+print('Original number of genes in DTI:',orig_genes_dti)
+print('New number of genes in DTI:',new_genes_dti)
+print('\n')
+print('Original number of genes in PPI:',orig_genes_ppi)
+print('New number of genes in PPI:',new_genes_ppi)
+print('\n')
+print('Original number of drugs in DDI:',orig_drugs_ddi)
+print('New number of drugs in DDI:',new_drugs_ddi)
+print('\n')
+# Side effects
+print('Side effects')
+print('Original number of joint side effects:',orig_se_combo)
+print('New number of joint side effects:', new_se_combo)
+print('\n')
+print('Original number of single side effects:', orig_se_mono)
+print('New number of single side effects:', new_se_mono)
 # ============================================================================================= #
 # EXPORTING DATABASE TO CSV FILES
 PPI.to_csv('./clean_data/new-decagon-ppi.csv',index=False,sep=',')
