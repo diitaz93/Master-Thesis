@@ -13,18 +13,24 @@ the needed data structures to be used in BDM calculations and DECAGON training.
 
 Parameters
 ----------
-number of side effects : int
-    Number of joint drug side effects to be chosen from the complete dataset.
+number of side effects : int, default=964
+    Number of joint drug side effects to be chosen from the complete dataset. If not given, 
+    the program uses the maximum number of side effects used by the authors of DECAGON.
 
 """
 # ============================================================================================= #
-import sys
+#import sys
+import argparse
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import pickle
 import datetime
-N = int(sys.argv[1]) # Number of side effects
+from joblib import Parallel, delayed
+parser = argparse.ArgumentParser(description='Remove outliers from datasets')
+parser.add_argument('N', nargs='?',default =964,type=int, help="Number of side effects")
+args = parser.parse_args()
+N = args.N
 # Import databases as pandas dataframes
 PPI = pd.read_csv('clean_data/new-decagon-ppi.csv',sep=',')
 PF = pd.read_csv('clean_data/new-decagon-genes.csv',sep=',')
@@ -43,10 +49,18 @@ orig_ddi_drugs = len(pd.unique(DDI[['STITCH 1','STITCH 2']].values.ravel()))
 orig_ppi_genes = len(pd.unique(PPI[['Gene 1','Gene 2']].values.ravel()))
 orig_dti_drugs = len(pd.unique(DTI['STITCH']))
 orig_dti_genes = len(pd.unique(DTI['Gene']))
+orig_dse_drugs = len(pd.unique(DSE['STITCH'].values))
+# Side effects
 orig_se_mono = len(pd.unique(DSE['Side Effect Name']))
+orig_se_combo = len(pd.unique(DDI['Polypharmacy Side Effect'].values))
 # ============================================================================================= #
 # SAMPLING DATASET AND INDEX DATA STRUCTURES
-se = SE.sample(n=N, axis=0)['Side Effect'].values # Choosing side effects
+# Choosing side effects. Sort DDI to be consistent with the authors
+DDI['freq'] = DDI.groupby('Polypharmacy Side Effect')['Polypharmacy Side Effect']\
+            .transform('count')
+DDI = DDI.sort_values(by=['freq'], ascending=False).drop(columns=['freq'])
+se = pd.unique(DDI['Polypharmacy Side Effect'].values)
+se = se[:N]
 # DDI
 DDI = DDI[DDI['Polypharmacy Side Effect'].isin(se)].reset_index(drop=True)
 DDI_drugs = pd.unique(DDI[['STITCH 1','STITCH 2']].values.ravel()) # Unique drugs 
@@ -56,6 +70,7 @@ se_combo_name2idx = {se: i for i, se in enumerate(se_names)}
 n_drugs = len(DDI_drugs)
 # DSE
 DSE = DSE[DSE['STITCH'].isin(DDI_drugs)].reset_index(drop=True)
+dse_drugs = len(pd.unique(DSE['STITCH'].values))
 se_mono_names = pd.unique(DSE['Side Effect Name'].values) # Unique individual side effects
 se_mono_name2idx = {name: i for i, name in enumerate(se_mono_names)}
 n_semono = len(se_mono_names)
@@ -76,15 +91,16 @@ PF = PF[PF['GeneID'].isin(PPI_genes)].reset_index(drop=True)
 # ============================================================================================= #
 # ADJACENCY MATRICES AND DEGREES
 # DDI
-ddi_adj_list = []
-for i in se_combo_name2idx.keys():
+def se_adj_matrix(se_name):
     m = np.zeros([n_drugs,n_drugs],dtype=int)
-    seDDI = DDI[DDI['Side Effect Name'].str.match(i)].reset_index()
+    seDDI = DDI[DDI['Side Effect Name'].str.match(se_name)].reset_index()
     for j in seDDI.index:
         row = drug2idx[seDDI.loc[j,'STITCH 1']]
         col = drug2idx[seDDI.loc[j,'STITCH 2']]
         m[row,col] = m[col,row] = 1
-    ddi_adj_list.append(sp.csr_matrix(m))
+    return sp.csr_matrix(m) 
+ddi_adj_list = Parallel(n_jobs=8)\
+    (delayed(se_adj_matrix)(d) for d in se_combo_name2idx.keys())        
 ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
 # DTI
 dti_adj = np.zeros([n_genes,n_drugs],dtype=int)
@@ -110,40 +126,54 @@ for i in DSE.index:
 drug_feat = sp.csr_matrix(drug_feat)
 # Protein feature matrices
 prot_feat = sp.coo_matrix(
-    PF[['GeneID', 'Length', 'Mass', 'n_helices', 'n_strands', 'n_turns']].to_numpy())
+    PF[['Length', 'Mass', 'n_helices', 'n_strands', 'n_turns']].to_numpy())
 norm_prot_feat = sp.coo_matrix(
-    PF[['Normalized Helices(Mean)', 'Normalized Helices(Median)',
-       'Normalized Strands(Mean)', 'Normalized Strands(Median)',
-       'Normalized Turns(Mean)', 'Normalized Turns(Median)']].to_numpy())
+    PF[['Normalized Helices(Mean)',
+       'Normalized Strands(Mean)',
+       'Normalized Turns(Mean)']].to_numpy())
 # ============================================================================================= #
 # CONTROL PRINTING
+# Interactions (edges)
+print('Interactions (edges)')
 print('Original number of PPI interactions:', orig_ppi)
 print('New number of PPI interactions:', len(PPI.index))
+print('\n')
+print('Original number of DTI interactions:', orig_dti)
+print('New number of DTI interactions:', len(DTI.index))
 print('\n')
 print('Original number of DDI interactions:', orig_ddi)
 print('New number of DDI interactions:', len(DDI.index))
 print('\n')
-print('Original number of DTI interactions:', orig_dti)
-print('New number of DTI interactions:', len(DTI.index))
-print('Original number of DTI genes:', orig_dti_genes)
-print('New number of DTI genes:',len(pd.unique(DTI['Gene'].values)))
-print('Original number of DTI drugs:', orig_dti_drugs)
-print('New number of DTI drugs:',len(pd.unique(DTI['STITCH'].values)))
-print('\n')
 print('Original number of DSE interactions:', orig_dse)
 print('New number of DSE interactions:', len(DSE.index))
+print('\n')
+# Drugs and genes (nodes)
+print('Drugs and genes (nodes)')
+print("Original number of drugs in DSE:",orig_dse_drugs)
+print("New number of drugs in DSE:",dse_drugs)
+print('\n')
+print("Original number of genes in PF:",orig_pf)
+print("New number of genes in PF:",len(PF.index))
+print('\n')
+print("Original number drugs in DTI",orig_dti_drugs)
+print("New number of drugs in DTI",dti_drugs)
+print('\n')
+print('Original number of genes in DTI:', orig_dti_genes)
+print('New number of genes in DTI:',dti_genes)
 print('\n')
 print('Original number of genes:',orig_ppi_genes)
 print('New number of genes:', n_genes)
 print('\n')
 print('Original number of drugs:',orig_ddi_drugs)
 print('New number of drugs:', n_drugs)
+print('\n')
+# Side effects
+print('Side effects')
+print('Original number of joint side effects:',orig_se_combo)
+print('New number of joint side effects:', len(se_names))
+print('\n')
 print('Original number of single side effects:', orig_se_mono)
 print('New number of single side effects:', n_semono)
-print('\n')
-print('Original number of proteins with features:', orig_pf)
-print('New number of proteins with features:', len(PF.index))
-print('\n')
 # ============================================================================================= #
 # SAVING DATA STRUCTURES
 now = datetime.datetime.now() # current date and time
