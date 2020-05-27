@@ -25,6 +25,7 @@ import os
 import sys
 import psutil
 import pickle
+import os
 from pybdm import BDM
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
 from getpass import getuser
@@ -51,7 +52,7 @@ print('BDM for DTI calculated')
 # Edge perturbation
 dti_edgeper = PerturbationExperiment(bdm, bipartite_network=True)
 dti_edgeper.set_data(np.array(dti_adj.todense()))
-print("Initial BDM calculated for nodes")
+print("Initial BDM calculated for edges")
 edgebdm_drugs_dti, edgebdm_genes_dti = dti_edgeper.node_equivalent()
 print('Edge BDM for DTI calculated')
 # ============================================================================================= #
@@ -59,7 +60,8 @@ print('Edge BDM for DTI calculated')
 genes,drugs = dti_adj.shape
 memUse = ps.memory_info()
 total_time=time.time()-start
-filename = './data_structures/dti_bdm_genes'+str(genes)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)
+path = os.getcwd()
+filename = path+'/data_structures/dti_bdm_genes'+str(genes)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)+'.pickle'
 output_data = {}
 output_data['nodebdm_drugs_dti'] = nodebdm_drugs_dti
 output_data['nodebdm_genes_dti'] = nodebdm_genes_dti
