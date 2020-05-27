@@ -9,9 +9,9 @@
 Imports original DECAGON database + protein features and writes out new data files containing a 
 consistent database. The new database has all the unlinked nodes (outliers) removed. In addition,
 normalizes the protein features corresponding to the number of helices, strands and turns to the
-average and median values of the protein length. All of the nodes (genes, drugs) from the DTI 
-database are included in their respective interaction databases (PPI, PF; and DDI, DSE 
-respectively) but not necessarily the opposite. 
+average values of the protein length. All of the nodes (genes, drugs) from the DTI database are 
+included in their respective interaction databases (PPI, PF; and DDI, DSE respectively) but not 
+necessarily the opposite. 
 """
 # ============================================================================================= #
 import numpy as np
@@ -85,25 +85,15 @@ new_drugs_dti = len(pd.unique(DTI['STITCH'].values))
 # ============================================================================================= #
 # NORMALIZES PROTEIN FEATURES
 avg = PF['Length'].mean()
-med = PF['Length'].median()
-norm_strand = PF['n_strands']/med
-norm_strand_med = norm_strand/norm_strand.max()
 norm_strand = PF['n_strands']/avg
 norm_strand_avg = norm_strand/norm_strand.max()
-norm_helix = PF['n_helices']/med
-norm_helix_med = norm_helix/norm_helix.max()
 norm_helix = PF['n_helices']/avg
 norm_helix_avg = norm_helix/norm_helix.max()
-norm_turns = PF['n_turns']/med
-norm_turns_med = norm_turns/norm_turns.max()
 norm_turns = PF['n_turns']/avg
 norm_turns_avg = norm_turns/norm_turns.max()
 PF['Normalized Helices(Mean)'] = norm_helix_avg
-PF['Normalized Helices(Median)'] = norm_helix_med
 PF['Normalized Strands(Mean)'] = norm_strand_avg
-PF['Normalized Strands(Median)'] = norm_strand_med
 PF['Normalized Turns(Mean)'] = norm_turns_avg
-PF['Normalized Turns(Median)'] = norm_turns_med
 # ============================================================================================= #
 # CONTROL PRINTING
 print ('Original number of PPI interactions',orig_ppi)
