@@ -37,7 +37,7 @@ ps= psutil.Process(pid)
 with open(input_file, 'rb') as f:
     ddi_adj_list = pickle.load(f)['ddi_adj_list']
 print('Input data loaded')
-jobs = 8
+jobs = 48
 usrnm = getuser()
 bdm = BDM(ndim=2, partition=PartitionRecursive)
 # ============================================================================================= #

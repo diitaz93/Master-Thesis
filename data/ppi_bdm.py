@@ -38,7 +38,7 @@ with open(input_file, 'rb') as f:
 print('Input data loaded')
 jobs = 48
 usrnm = getuser()
-bdm = BDM(ndim=2, partition=Recursive)
+bdm = BDM(ndim=2, partition=PartitionRecursive)
 # ============================================================================================= #
 # CALCULATION
 # Node perturbation
