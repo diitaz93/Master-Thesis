@@ -11,6 +11,7 @@ import networkx as nx
 import scipy.sparse as sp
 from sklearn import metrics
 import psutil
+import pickle
 from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
@@ -18,12 +19,6 @@ from decagon.utility import rank_metrics, preprocessing
 
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
-
-# Train on GPU
-#os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-#os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-#config = tf.ConfigProto()
-#config.gpu_options.allow_growth = True
 
 # psutil BEGIN
 start = time.time() #in seconds
@@ -103,95 +98,16 @@ def construct_placeholders(edge_types):
 
 ###########################################################
 #
-# Load and preprocess data (This is a dummy toy example!)
+# Loading data structures
 #
 ###########################################################
 
-####
-# The following code uses artificially generated and very small networks.
-# Expect less than excellent performance as these random networks do not have any interesting structure.
-# The purpose of main.py is to show how to use the code!
-#
-# All preprocessed datasets used in the drug combination study are at: http://snap.stanford.edu/decagon:
-# (1) Download datasets from http://snap.stanford.edu/decagon to your local machine.
-# (2) Replace dummy toy datasets used here with the actual datasets you just downloaded.
-# (3) Train & test the model.
-####
-
-val_test_size = 0.05
-n_genes = 500
-n_drugs = 400
-n_drugdrug_rel_types = 3
-# Creates random network as graph
-gene_net = nx.planted_partition_graph(50, 10, 0.1, 0.02, seed=42)
-
-gene_adj = nx.adjacency_matrix(gene_net)
-gene_degrees = np.array(gene_adj.sum(axis=0)).squeeze()
-# Creates random adjacency matrix for genes and drugs
-gene_drug_adj = sp.csr_matrix((10 * np.random.randn(n_genes, n_drugs) > 15).astype(int))
-drug_gene_adj = gene_drug_adj.transpose(copy=True)
-
-# Creates random adjacency matrices for each drug type
-drug_drug_adj_list = []
-tmp = np.dot(drug_gene_adj, gene_drug_adj)
-for i in range(n_drugdrug_rel_types):
-    mat = np.zeros((n_drugs, n_drugs))
-    for d1, d2 in combinations(list(range(n_drugs)), 2):
-        if tmp[d1, d2] == i + 5:
-            mat[d1, d2] = mat[d2, d1] = 1.
-    drug_drug_adj_list.append(sp.csr_matrix(mat))
-drug_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in drug_drug_adj_list]
-
-
-# data representation
-adj_mats_orig = {
-    (0, 0): [gene_adj, gene_adj.transpose(copy=True)],
-    (0, 1): [gene_drug_adj],
-    (1, 0): [drug_gene_adj],
-    (1, 1): drug_drug_adj_list + [x.transpose(copy=True) for x in drug_drug_adj_list],
-}
-degrees = {
-    0: [gene_degrees, gene_degrees],
-    1: drug_degrees_list + drug_degrees_list,
-}
-
-# featureless (genes)
-#gene_feat = sp.identity(n_genes)
-gene_feat = sp.random(n_genes, n_genes, density=0.25)
-gene_nonzero_feat, gene_num_feat = gene_feat.shape
-gene_feat = preprocessing.sparse_to_tuple(gene_feat.tocoo())
-
-# features (drugs)
-#drug_feat = sp.identity(n_drugs)
-drug_feat = sp.random(n_drugs, n_drugs, density=0.25)
-drug_nonzero_feat, drug_num_feat = drug_feat.shape
-drug_feat = preprocessing.sparse_to_tuple(drug_feat.tocoo())
-
-# data representation
-num_feat = {
-    0: gene_num_feat,
-    1: drug_num_feat,
-}
-nonzero_feat = {
-    0: gene_nonzero_feat,
-    1: drug_nonzero_feat,
-}
-feat = {
-    0: gene_feat,
-    1: drug_feat,
-}
-
-edge_type2dim = {k: [adj.shape for adj in adjs] for k, adjs in adj_mats_orig.items()}
-edge_type2decoder = {
-    (0, 0): 'bilinear',
-    (0, 1): 'bilinear',
-    (1, 0): 'bilinear',
-    (1, 1): 'dedicom',
-}
-
-edge_types = {k: len(v) for k, v in adj_mats_orig.items()}
-num_edge_types = sum(edge_types.values())
-print("Edge types:", "%d" % num_edge_types)
+filename = './data/data_structures/DECAGON_toy_no_feat'
+with open(filename, 'rb') as f:
+    DS = pickle.load(f)
+    for key in DS.keys():
+        globals()[key]=DS[key]
+        print(key,"Imported successfully")
 
 ###########################################################
 #
@@ -199,6 +115,7 @@ print("Edge types:", "%d" % num_edge_types)
 #
 ###########################################################
 
+val_test_size = 0.05
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('neg_sample_size', 1, 'Negative sample size.')
@@ -266,10 +183,8 @@ feed_dict = {}
 # Train model
 #
 ###########################################################
-f = open('training.txt', 'wb')
 acc_scores = np.array([None,None,None,None,None])
 print("Train model")
-f.write("Train model\n")
 for epoch in range(FLAGS.epochs):
 
     minibatch.shuffle()
@@ -295,38 +210,31 @@ for epoch in range(FLAGS.epochs):
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
             step_time = time.time() - t
             
-            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" % batch_edge_type,
+            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:",\
+                  "%04d" % batch_edge_type,
                   "train_loss=", "{:.5f}".format(train_cost),
                   "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
                   "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
-            f.write("Epoch:%04d Iter:%04d Edge:%04d train_loss=%.5f val_roc=%.5f val_auprc=%.5f val_apk=%.5f time=%.5f\n"% 
-                 ((epoch + 1),(itr + 1), batch_edge_type, train_cost, val_auc, val_auprc, val_apk, step_time))
             acc_scores = np.vstack((acc_scores,[val_auc,val_auprc,val_apk,train_cost,step_time]))
         itr += 1
 
 acc_scores=acc_scores[1:,:]
-np.save('./acc_scores.npy',acc_scores)
+output_data = {}
+output_data['val_auc'] = acc_scores[:,0]
+output_data['val_auprc'] = acc_scores[:,1]
+output_data['val_apk'] = acc_scores[:,2]
+output_data['train_cost'] = acc_scores[:,3]
+output_data['step_time'] = acc_scores[:,4]
 print("Optimization finished!")
-f.write("Optimization finished!\n")
-for et in range(num_edge_types):
-    roc_score, auprc_score, apk_score = get_accuracy_scores(
-        minibatch.test_edges, minibatch.test_edges_false, minibatch.idx2edge_type[et])
-    print("Edge type=", "[%02d, %02d, %02d]" % minibatch.idx2edge_type[et])
-    f.write("Edge type=[%02d, %02d, %02d]\n" % minibatch.idx2edge_type[et])
-    print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(roc_score))
-    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, roc_score))
-    print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(auprc_score))
-    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, auprc_score))
-    print("Edge type:", "%04d" % et, "Test AP@k score", "{:.5f}".format(apk_score))
-    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, apk_score))
-    print()
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms)
-f.write('Virtual memory:%f\n'% memUse.vms)
 print('RSS Memory:', memUse.rss)
-f.write('RSS Memory:%f\n'% memUse.rss)
 total_time=time.time()-start
-np.save('./mem_and_time.npy',np.array([memUse.vms,memUse.rss,total_time]))
+output_data['time'] = total_time
+output_data['vms'] = memUse.vms
+output_data['rss'] = memUse.rss
 print("Total time:",total_time)
-f.write("Total time:%f\n" % total_time)
-f.close()
+filename = 'results_training/Train_toy_epochs'+str(FLAGS.epochs)+'_h1'+str(FLAGS.hidden1)+\
+           '_h2'+str(FLAGS.hidden2)+'_lr'+str(FLAGS.learning_rate)+'dropout'+str(FLAGS.dropout)
+with open(filename, 'wb') as f:
+    pickle.dump(output_data, f, protocol=2)

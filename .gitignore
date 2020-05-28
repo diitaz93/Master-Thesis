@@ -6,6 +6,8 @@ data/original_data/*
 
 
 DS_se964_2020_05_27
+toyDS_genes16271_drugs639_se964_2020_05_28
+DECAGON_toy_no_feat
 
 # Jupyter Notebook
 *.ipynb_checkpoints
