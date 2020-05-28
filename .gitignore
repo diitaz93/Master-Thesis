@@ -5,6 +5,8 @@ data/clean_data/*
 data/original_data/*
 
 
+DS_se964_2020_05_27
+
 # Jupyter Notebook
 *.ipynb_checkpoints
 
