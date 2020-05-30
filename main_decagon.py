@@ -22,11 +22,11 @@ import scipy.sparse as sp
 from sklearn import metrics
 import pandas as pd
 import psutil
+import pickle
 from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
-from data.load_functions import *
 
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -107,104 +107,12 @@ def construct_placeholders(edge_types):
 
 # ============================================================================================= #
 # LOAD DATA
-# Loading Gene data (PPI)
-ppi, gene2idx = load_ppi(fname='data/clean_data/ppi_mini.csv')
-ppi_adj = nx.adjacency_matrix(ppi)
-ppi_degrees = np.array(ppi_adj.sum(axis=0)).squeeze() 
-ppi_genes = ppi.number_of_nodes() # Number of genes (nodes)
-# Loading individual side effects
-stitch2se, semono2name, semono2idx = load_mono_se(fname='data/clean_data/mono_mini.csv')
-n_semono = len(semono2name)
-print('Number of individual side effects: ', n_semono)
-# Loading Target data (DTI)
-stitch2proteins = load_targets(fname='data/clean_data/targets_mini.csv')
-dti_drugs = len(pd.unique(stitch2proteins.keys()))
-dti_genes = len(set(chain.from_iterable(stitch2proteins.itervalues())))
-print('Number of genes in DTI:', dti_genes)
-print('Number of drugs in DTI:', dti_drugs)
-# Loading Drug data (DDI)
-combo2stitch, combo2se, secombo2name, drug2idx = load_combo_se(fname='data/clean_data/combo_mini.csv')
-# Loading Side effect data (features)
-stitch2se, semono2name, semono2idx = load_mono_se(fname='data/clean_data/mono_mini.csv')
-# Loading protein features
-PF = pd.read_csv('data/clean_data/genes_mini.csv', sep=',',header=None).to_numpy()
-ddi_drugs = len(drug2idx)
-print('Number of drugs: ', ddi_drugs)
-# ============================================================================================= #
-# PREPROCESS DATA
-# Drug-target adjacency matrix
-dti_adj = np.zeros([ppi_genes,ddi_drugs],dtype=int)
-for drug in drug2idx.keys():
-    for gene in stitch2proteins[drug]:
-        if gene==set():
-            continue
-        else:
-            idp = gene2idx[str(gene)]
-            idd = drug2idx[drug]
-            dti_adj[idp,idd] = 1  
-dti_adj = sp.csr_matrix(dti_adj)
-# DDI adjacency matrix
-ddi_adj_list = []
-for se in secombo2name.keys():
-    m = np.zeros([ddi_drugs,ddi_drugs],dtype=int)
-    for pair in combo2se.keys():
-        if se in combo2se[pair]:
-            d1,d2 = combo2stitch[pair]
-            m[drug2idx[d1],drug2idx[d2]] = m[drug2idx[d2],drug2idx[d1]] = 1
-    ddi_adj_list.append(sp.csr_matrix(m))    
-ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
-
-adj_mats_orig = {
-    (0, 0): [ppi_adj, ppi_adj.transpose(copy=True)],
-    (0, 1): [dti_adj],
-    (1, 0): [dti_adj.transpose(copy=True)],
-    (1, 1): ddi_adj_list + [x.transpose(copy=True) for x in ddi_adj_list],
-}
-degrees = {
-    0: [ppi_degrees, ppi_degrees],
-    1: ddi_degrees_list + ddi_degrees_list, 
-}
-# featureless (genes)
-#gene_feat = sp.identity(n_genes)
-gene_feat = sp.coo_matrix(PF)
-gene_nonzero_feat, gene_num_feat = 2*[gene_feat.shape[1]]
-gene_feat = preprocessing.sparse_to_tuple(gene_feat)#.tocoo())
-# features (drugs)
-oh_feat = np.zeros([ddi_drugs,n_semono], dtype=int)
-for drug in drug2idx.keys():
-    for se in stitch2se[drug]:
-        did = drug2idx[drug]
-        seid = semono2idx[se]
-        oh_feat[did,seid] = 1
-drug_feat = sp.csr_matrix(oh_feat)
-drug_nonzero_feat = n_semono
-drug_num_feat = n_semono
-drug_feat = preprocessing.sparse_to_tuple(drug_feat.tocoo())
-# data representation
-num_feat = {
-    0: gene_num_feat,
-    1: drug_num_feat,
-}
-nonzero_feat = {
-    0: gene_nonzero_feat,
-    1: drug_nonzero_feat,
-}
-feat = {
-    0: gene_feat,
-    1: drug_feat,
-}
-# Dictionary with the shape of all the matrices of the dictionary adj_mats_orig
-edge_type2dim = {k: [adj.shape for adj in adjs] for k, adjs in adj_mats_orig.items()}
-edge_type2decoder = {
-    (0, 0): 'bilinear',
-    (0, 1): 'bilinear',
-    (1, 0): 'bilinear',
-    (1, 1): 'dedicom',
-}
-#Dictionary with the number of matrices for each entry of adj_mats_orig
-edge_types = {k: len(v) for k, v in adj_mats_orig.items()}
-num_edge_types = sum(edge_types.values())
-print("Edge types:", "%d" % num_edge_types)
+filename = './data/data_structures/DECAGON_real_DSE_NPF'
+with open(filename, 'rb') as f:
+    DS = pickle.load(f)
+    for key in DS.keys():
+        globals()[key]=DS[key]
+        print(key,"Imported successfully")
 # ============================================================================================= #
 # SETTINGS AND PLACEHOLDERS
 val_test_size = 0.05
@@ -262,10 +170,8 @@ sess.run(tf.global_variables_initializer())
 feed_dict = {}
 # ============================================================================================= #
 # TRAINING
-f = open('training.txt', 'wb')
 acc_scores = np.array([None,None,None,None,None])
 print("Train model")
-f.write("Train model\n")
 for epoch in range(FLAGS.epochs):
 
     minibatch.shuffle()
@@ -290,39 +196,39 @@ for epoch in range(FLAGS.epochs):
                 minibatch.val_edges, minibatch.val_edges_false,
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
             step_time = time.time() - t
-
-            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" % batch_edge_type,
-                  "train_loss=", "{:.5f}".format(train_cost),
-                  "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
-                  "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
-            f.write("Epoch:%04d Iter:%04d Edge:%04d train_loss=%.5f val_roc=%.5f val_auprc=%.5f val_apk=%.5f time=%.5f\n"% 
-                 ((epoch + 1),(itr + 1), batch_edge_type, train_cost, val_auc, val_auprc, val_apk, step_time))
-            acc_scores = np.vstack((acc_scores,[val_auc,val_auprc,val_apk,train_cost,step_time]))
+            
+            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" \
+                  % batch_edge_type,"train_loss=", "{:.5f}".format(train_cost),"val_roc=", \
+                  "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),"val_apk=",\
+                  "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
         itr += 1
-
+        
 acc_scores=acc_scores[1:,:]
-np.save('./acc_scores.npy',acc_scores)
+output_data = {}
+output_data['val_auc'] = acc_scores[:,0]
+output_data['val_auprc'] = acc_scores[:,1]
+output_data['val_apk'] = acc_scores[:,2]
+output_data['train_cost'] = acc_scores[:,3]
+output_data['step_time'] = acc_scores[:,4]
 print("Optimization finished!")
-f.write("Optimization finished!\n")
 for et in range(num_edge_types):
     roc_score, auprc_score, apk_score = get_accuracy_scores(
         minibatch.test_edges, minibatch.test_edges_false, minibatch.idx2edge_type[et])
     print("Edge type=", "[%02d, %02d, %02d]" % minibatch.idx2edge_type[et])
-    f.write("Edge type=[%02d, %02d, %02d]\n" % minibatch.idx2edge_type[et])
     print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(roc_score))
-    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, roc_score))
     print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(auprc_score))
-    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, auprc_score))
     print("Edge type:", "%04d" % et, "Test AP@k score", "{:.5f}".format(apk_score))
-    f.write("Edge type:%04d Test AUROC score %.5f\n" % (et, apk_score))
     print()
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms)
-f.write('Virtual memory:%f\n'% memUse.vms)
 print('RSS Memory:', memUse.rss)
-f.write('RSS Memory:%f\n'% memUse.rss)
 total_time=time.time()-start
-np.save('./mem_and_time.npy',np.array([memUse.vms,memUse.rss,total_time]))
+output_data['time'] = total_time
+output_data['vms'] = memUse.vms
+output_data['rss'] = memUse.rss
 print("Total time:",total_time)
-f.write("Total time:%f\n" % total_time)
-f.close()
+filename = 'results_training/TRAIN_real_DSE_NPF_epochs'+str(FLAGS.epochs)+'_h1'+\
+           str(FLAGS.hidden1)+'_h2'+str(FLAGS.hidden2)+'_lr'+str(FLAGS.learning_rate)+\
+           'dropout'+str(FLAGS.dropout)
+with open(filename, 'wb') as f:
+    pickle.dump(output_data, f, protocol=2)

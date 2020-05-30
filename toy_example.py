@@ -226,6 +226,14 @@ output_data['val_apk'] = acc_scores[:,2]
 output_data['train_cost'] = acc_scores[:,3]
 output_data['step_time'] = acc_scores[:,4]
 print("Optimization finished!")
+for et in range(num_edge_types):
+    roc_score, auprc_score, apk_score = get_accuracy_scores(
+        minibatch.test_edges, minibatch.test_edges_false, minibatch.idx2edge_type[et])
+    print("Edge type=", "[%02d, %02d, %02d]" % minibatch.idx2edge_type[et])
+    print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(roc_score))
+    print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(auprc_score))
+    print("Edge type:", "%04d" % et, "Test AP@k score", "{:.5f}".format(apk_score))
+    print()
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms)
 print('RSS Memory:', memUse.rss)
