@@ -4,10 +4,13 @@
 data/clean_data/*
 data/original_data/*
 
-
-DS_se964_2020_05_27
-toyDS_genes16271_drugs639_se964_2020_05_28
-DECAGON_toy_no_feat
+# Data structures
+DS_*
+DECAGON_*
+TRAIN_*_
+PPI_BDM_*
+DDI_BDM_*
+DTI_BDM_*
 
 # Jupyter Notebook
 *.ipynb_checkpoints

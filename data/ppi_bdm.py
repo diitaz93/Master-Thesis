@@ -59,7 +59,7 @@ print('Edge BDM for PPI calculated')
 genes = len(nodebdm_ppi)
 memUse = ps.memory_info()
 total_time=time.time()-start
-filename = './data_structures/ppi_bdm_genes'+str(genes)+'_'+usrnm+str(jobs)
+filename = './data_structures/PPI_BDM_genes'+str(genes)+'_'+usrnm+str(jobs)
 output_data = {}
 output_data['nodebdm_ppi'] = nodebdm_ppi
 output_data['edgebdm_ppi'] = edgebdm_ppi

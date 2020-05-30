@@ -64,7 +64,7 @@ print('Node and Edge BDM for DDI calculated')
 drugs = np.shape(ddi_adj_list[0])[0]
 memUse = ps.memory_info()
 total_time=time.time()-start
-filename = './data_structures/ddi_bdm_se'+str(total)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)
+filename = './data_structures/DDI_BDM_se'+str(total)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)
 output_data = {}
 output_data['nodebdm_ddi_list'] = nodebdm_ddi_list
 output_data['edgebdm_ddi_list'] = edgebdm_ddi_list

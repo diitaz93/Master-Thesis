@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import pickle
-import datetime
 from joblib import Parallel, delayed
 parser = argparse.ArgumentParser(description='Remove outliers from datasets')
 parser.add_argument('N', nargs='?',default =964,type=int, help="Number of side effects")
@@ -176,11 +175,7 @@ print('Original number of single side effects:', orig_se_mono)
 print('New number of single side effects:', n_semono)
 # ============================================================================================= #
 # SAVING DATA STRUCTURES
-now = datetime.datetime.now() # current date and time
-year = now.strftime("%Y")
-month = now.strftime("%m")
-day = now.strftime("%d")
-filename = './data_structures/DS_se'+str(N)+'_'+year+'_'+month+'_'+day
+filename = './data_structures/DS_real_genes'+str(n_genes)+'_drugs'+str(n_drugs)+'_se'+str(N)
 data = {}
 # Dictionaries
 data['gene2idx'] = gene2idx
