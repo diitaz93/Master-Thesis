@@ -30,9 +30,11 @@ from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
 
 parser = argparse.ArgumentParser(description='Train DEGAGON')
-parser.add_argument('filename',type=str, help="Input file with data structures")
+parser.add_argument('in_file',type=str, help="Input file with data structures")
+parser.add_argument('out_file',type=str,help="Output file root with TRAIN info")
 args = parser.parse_args()
-filename = args.filename
+in_file = args.in_file
+out_file = args.out_file
 
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -113,7 +115,7 @@ def construct_placeholders(edge_types):
 
 # ============================================================================================= #
 # LOAD DATA
-with open(filename, 'rb') as f:
+with open(in_file, 'rb') as f:
     DS = pickle.load(f)
     for key in DS.keys():
         globals()[key]=DS[key]
@@ -232,7 +234,7 @@ output_data['time'] = total_time
 output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 print("Total time:",total_time)
-filename = 'results_training/TRAIN_real_DSE_NPF_epochs'+str(FLAGS.epochs)+'_h1'+\
+filename = 'results_training/'+out_file+'_epochs'+str(FLAGS.epochs)+'_h1'+\
            str(FLAGS.hidden1)+'_h2'+str(FLAGS.hidden2)+'_lr'+str(FLAGS.learning_rate)+\
            'dropout'+str(FLAGS.dropout)
 with open(filename, 'wb') as f:
