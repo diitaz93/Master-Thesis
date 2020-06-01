@@ -13,6 +13,7 @@ from __future__ import division
 from __future__ import print_function
 from operator import itemgetter
 from itertools import combinations, chain
+import argparse
 import time
 import os
 import tensorflow as tf
@@ -27,6 +28,11 @@ from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
+
+parser = argparse.ArgumentParser(description='Train DEGAGON')
+parser.add_argument('filename',type=str, help="Input file with data structures")
+args = parser.parse_args()
+filename = args.filename
 
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
@@ -107,7 +113,6 @@ def construct_placeholders(edge_types):
 
 # ============================================================================================= #
 # LOAD DATA
-filename = './data/data_structures/DECAGON_real_DSE_NPF'
 with open(filename, 'rb') as f:
     DS = pickle.load(f)
     for key in DS.keys():
@@ -120,7 +125,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('neg_sample_size', 1, 'Negative sample size.')
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 50, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 20, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 64, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
