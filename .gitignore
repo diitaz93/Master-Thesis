@@ -11,6 +11,7 @@ TRAIN_*_
 PPI_BDM_*
 DDI_BDM_*
 DTI_BDM_*
+TRAIN_*
 
 # Jupyter Notebook
 *.ipynb_checkpoints

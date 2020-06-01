@@ -203,6 +203,7 @@ for epoch in range(FLAGS.epochs):
                 minibatch.val_edges, minibatch.val_edges_false,
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
             step_time = time.time() - t
+            acc_scores = np.vstack([acc_scores,[val_auc,val_auprc,val_apk,train_cost,step_time]])
             
             print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" \
                   % batch_edge_type,"train_loss=", "{:.5f}".format(train_cost),"val_roc=", \
