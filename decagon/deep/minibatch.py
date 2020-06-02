@@ -55,6 +55,10 @@ class EdgeMinibatchIterator(object):
                 print("Test edges=", "%04d" % len(self.test_edges[i,j][k]))
 
     def preprocess_graph(self, adj):
+        '''Normalize adj matrix to the form
+        D^{-1/2}\bar{A}D^{-1/2} if is squared or
+        D_r^{-1/2}AD_c^{-1/2} if is rectangular
+        '''
         adj = sp.coo_matrix(adj)
         if adj.shape[0] == adj.shape[1]:
             adj_ = adj + sp.eye(adj.shape[0])
@@ -76,11 +80,15 @@ class EdgeMinibatchIterator(object):
         return np.any(rows_close)
 # Divides the data corresponding to a given edge in test, train and validation
     def mask_test_edges(self, edge_type, type_idx):
+        ''' Selects a fraction of the edges of a given adj matrix to be test and val edges
+        given the fraction val_test_edges. Also selects an (equal) number of false edges
+        from the zero entries of the matrix to be negative test and val edges.
+        '''
         # Coordinates of non-zero elements in adj matrix (edge)
         edges_all, _, _ = preprocessing.sparse_to_tuple(self.adj_mats[edge_type][type_idx])
-        # Number of test edges (1% of all edges or 20)
+        # Number of test edges (% of all edges or 20)
         num_test = max(20, int(np.floor(edges_all.shape[0] * self.val_test_size)))
-        # Number of train edges (1% of all edges or 20)
+        # Number of train edges (% of all edges or 20)
         num_val = max(20, int(np.floor(edges_all.shape[0] * self.val_test_size)))
 
         all_edge_idx = list(range(edges_all.shape[0])) # orders and indexes edges
