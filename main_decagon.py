@@ -177,12 +177,13 @@ sess.run(tf.global_variables_initializer())
 feed_dict = {}
 # ============================================================================================= #
 # TRAINING
-acc_scores = np.array([None,None,None,None,None])
+acc_scores = np.zeros([num_edge_types,5,1])
 print("Train model")
 for epoch in range(FLAGS.epochs):
-
+    acc_layer = np.zeros([num_edge_types,5,1])
     minibatch.shuffle()
     itr = 0
+    edge_count = 0
     while not minibatch.end():
         # Construct feed dictionary
         feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)
@@ -198,26 +199,33 @@ for epoch in range(FLAGS.epochs):
         train_cost = outs[1]
         batch_edge_type = outs[2]
 
-        if itr % PRINT_PROGRESS_EVERY == 0:
+        #if itr % PRINT_PROGRESS_EVERY == 0:
+        if batch_edge_type == edge_count:
             val_auc, val_auprc, val_apk = get_accuracy_scores(
                 minibatch.val_edges, minibatch.val_edges_false,
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
             step_time = time.time() - t
-            acc_scores = np.vstack([acc_scores,[val_auc,val_auprc,val_apk,train_cost,step_time]])
-            
-            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:", "%04d" \
-                  % batch_edge_type,"train_loss=", "{:.5f}".format(train_cost),"val_roc=", \
-                  "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),"val_apk=",\
-                  "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
+            acc_layer[edge_count,:,0] = [val_auc,val_auprc,val_apk,train_cost,step_time]
+            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:",
+                  "%04d" % batch_edge_type,
+                  "train_loss=", "{:.5f}".format(train_cost),
+                  "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
+                  "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
+            edge_count += 1
+        if edge_count == num_edge_types: 
+            edge_count=0
+            acc_scores = np.concatenate((acc_scores,acc_layer),axis=2)
+            acc_layer = np.zeros([num_edge_types,5,1])
+            print(acc_scores.shape)
         itr += 1
         
-acc_scores=acc_scores[1:,:]
+acc_scores=acc_scores[:,:,1:]
 output_data = {}
-output_data['val_auc'] = acc_scores[:,0]
-output_data['val_auprc'] = acc_scores[:,1]
-output_data['val_apk'] = acc_scores[:,2]
-output_data['train_cost'] = acc_scores[:,3]
-output_data['step_time'] = acc_scores[:,4]
+output_data['val_auc'] = acc_scores[:,0,:]
+output_data['val_auprc'] = acc_scores[:,1,:]
+output_data['val_apk'] = acc_scores[:,2,:]
+output_data['train_cost'] = acc_scores[:,3,:]
+output_data['step_time'] = acc_scores[:,4,:]
 print("Optimization finished!")
 for et in range(num_edge_types):
     roc_score, auprc_score, apk_score = get_accuracy_scores(

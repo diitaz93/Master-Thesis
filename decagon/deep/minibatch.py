@@ -166,6 +166,7 @@ class EdgeMinibatchIterator(object):
 
     def next_minibatch_feed_dict(self, placeholders):
         """Select a random edge type and a batch of edges of the same type"""
+        # 1. Select edge type assigning an index to the edge based on the value of self.iter
         while True:
             if self.iter % 4 == 0:
                 # gene-gene relation
@@ -183,7 +184,7 @@ class EdgeMinibatchIterator(object):
                 else:
                     self.current_edge_type_idx = self.edge_type2idx[0, 0, 0]
                     self.iter = 0
-
+        # 2. Check if there are enough train instances left to fill a batch 
             i, j, k = self.idx2edge_type[self.current_edge_type_idx]
             if self.batch_num[self.current_edge_type_idx] * self.batch_size \
                    <= len(self.train_edges[i,j][k]) - self.batch_size + 1:
