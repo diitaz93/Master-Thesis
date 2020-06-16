@@ -69,7 +69,7 @@ output_data['time_ppi'] = total_time
 output_data['jobs_ppi'] = jobs
 path = os.getcwd()
 words = input_file.split('_')
-output_file = path + '/data_structures/BDM/PPI_BDM_' + words[2] + 'genes' + str(genes) + '_'\
+output_file = path + '/data_structures/BDM/PPI_BDM_' + words[2] + '_genes_' + str(genes) + '_'\
              + usrnm + str(jobs)
 with open(output_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)

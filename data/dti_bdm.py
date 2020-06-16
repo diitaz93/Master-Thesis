@@ -73,8 +73,8 @@ output_data['time_dti'] = total_time
 output_data['jobs_dti'] = jobs
 path = os.getcwd()
 words = input_file.split('_')
-output_file = path + '/data_structures/BDM/DTI_BDM_' + words[2] + 'genes' + str(genes) +\
-             '_drugs' + str(drugs) + '_' + usrnm + str(jobs)
+output_file = path + '/data_structures/BDM/DTI_BDM_' + words[2] + '_genes_' + str(genes) +\
+             '_drugs_' + str(drugs) + '_' + usrnm + str(jobs)
 with open(output_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported')
