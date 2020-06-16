@@ -19,7 +19,6 @@ number of side effects : int, default=964
 
 """
 # ============================================================================================= #
-#import sys
 import argparse
 import numpy as np
 import pandas as pd
@@ -130,6 +129,8 @@ norm_prot_feat = sp.coo_matrix(
     PF[['Normalized Helices(Mean)',
        'Normalized Strands(Mean)',
        'Normalized Turns(Mean)']].to_numpy())
+n_pf = np.shape(prot_feat)[1]
+n_npf = np.shape(norm_prot_feat)[1]
 # ============================================================================================= #
 # CONTROL PRINTING
 # Interactions (edges)
@@ -173,9 +174,12 @@ print('New number of joint side effects:', len(se_names))
 print('\n')
 print('Original number of single side effects:', orig_se_mono)
 print('New number of single side effects:', n_semono)
+print('\n')
+# Protein side effects
+print('Number of protein features:',n_pf)
+print('Number of normalized protein features:',n_npf)
 # ============================================================================================= #
 # SAVING DATA STRUCTURES
-filename = './data_structures/DS_real_genes'+str(n_genes)+'_drugs'+str(n_drugs)+'_se'+str(N)
 data = {}
 # Dictionaries
 data['gene2idx'] = gene2idx
@@ -195,5 +199,7 @@ data['drug_feat'] = drug_feat
 # PF
 data['prot_feat'] = prot_feat
 data['norm_prot_feat'] = norm_prot_feat
+filename = './data_structures/DS/DS_real_DSE_' + str(n_semono) + '_PF_' + str(n_pf) + '_NPF_' +\
+           str(n_npf) + '_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(N)
 with open(filename, 'wb') as f:
     pickle.dump(data, f, protocol=3)
