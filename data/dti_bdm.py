@@ -6,11 +6,11 @@
 # Creation Date: 23/05/2020                                                                     #
 # ============================================================================================= #
 """
-Calculates the algoritmic complexity of the gene-drug network of the DECAGON dataset. The dataset
-is given as a bipartite adjacency matrix. The code uses the package pybdm to calculate the 
-complexity contribution of each node and its corresponding edges in both axis of the matrix 
-separately. The calculated feature vectors are along with relevant data are exported as a python 
-shelf.
+Calculates the algoritmic complexity of the gene-drug network of the DECAGON dataset. The 
+dataset is given as a bipartite adjacency matrix of size 𝑁𝑔𝑒𝑛𝑒𝑠×𝑁𝑑𝑟𝑢𝑔𝑠. The code uses the 
+package pybdm to calculate the complexity contribution of each node and its corresponding edges 
+in both axis of the matrix separately. The calculated feature vectors are exported along with 
+relevant data as a pickle readable format file.
 
 Parameters
 ----------
@@ -19,13 +19,11 @@ path : string
 """
 # ============================================================================================= #
 import numpy as np
-import scipy.sparse as sp
 import time
 import os
 import sys
 import psutil
 import pickle
-import os
 from pybdm import BDM
 from pybdm.partitions import PartitionRecursive
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
@@ -40,7 +38,7 @@ with open(input_file, 'rb') as f:
 print('Input data loaded')
 jobs = 8
 usrnm = getuser()
-bdm = BDM(ndim=2,partition=PartitionRecursive)
+bdm = BDM(ndim=2, partition=PartitionRecursive)
 # ============================================================================================= #
 # CALCULATION
 # Node perturbation
@@ -54,24 +52,29 @@ print('BDM for DTI calculated')
 dti_edgeper = PerturbationExperiment(bdm, bipartite_network=True)
 dti_edgeper.set_data(np.array(dti_adj.todense()))
 print("Initial BDM calculated for edges")
-edgebdm_genes_dti, edgebdm_drugs_dti = dti_edgeper.node_equivalent()
+add_edgebdm_genes_dti, add_edgebdm_drugs_dti = dti_edgeper.run_adding_edges()
+rem_edgebdm_genes_dti, rem_edgebdm_drugs_dti = dti_edgeper.run_removing_edges()
 print('Edge BDM for DTI calculated')
 # ============================================================================================= #
 # EXPORTING
 genes,drugs = dti_adj.shape
 memUse = ps.memory_info()
 total_time=time.time()-start
-path = os.getcwd()
-filename = path+'/data_structures/DTI_BDM_genes'+str(genes)+'_drugs'+str(drugs)+'_'+usrnm+str(jobs)
 output_data = {}
 output_data['nodebdm_drugs_dti'] = nodebdm_drugs_dti
 output_data['nodebdm_genes_dti'] = nodebdm_genes_dti
-output_data['edgebdm_drugs_dti'] = edgebdm_drugs_dti
-output_data['edgebdm_genes_dti'] = edgebdm_genes_dti
+output_data['add_edgebdm_drugs_dti'] = add_edgebdm_drugs_dti
+output_data['add_edgebdm_genes_dti'] = add_edgebdm_genes_dti
+output_data['rem_edgebdm_drugs_dti'] = rem_edgebdm_drugs_dti
+output_data['rem_edgebdm_genes_dti'] = rem_edgebdm_genes_dti
 output_data['vms_dti'] = memUse.vms
 output_data['rss_dti'] = memUse.rss
 output_data['time_dti'] = total_time
 output_data['jobs_dti'] = jobs
-with open(filename, 'wb') as f:
+path = os.getcwd()
+words = input_file.split('_')
+output_file = path + '/data_structures/BDM/DTI_BDM_' + words[2] + 'genes' + str(genes) +\
+             '_drugs' + str(drugs) + '_' + usrnm + str(jobs)
+with open(output_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported')

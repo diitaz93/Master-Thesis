@@ -6,10 +6,10 @@
 # Creation Date: 23/05/2020                                                                     #
 # ============================================================================================= #
 """
-Calculates the algoritmic complexity of the gene network of the DECAGON dataset. The dataset is
-given as an adjacency matrix. The code uses the package pybdm to calculate the complexity
-contribution of each node and its corresponding edges. The calculated feature vector along with 
-relevant data are exported as a python shelf.
+Calculates the algoritmic complexity of the gene network of the DECAGON dataset. The dataset is 
+given as an adjacency matrix of size 𝑁𝑔𝑒𝑛𝑒𝑠×𝑁𝑔𝑒𝑛𝑒𝑠. The code uses the package pybdm to 
+calculate the complexity contribution of each node and its corresponding edges. The calculated 
+feature vector along with relevant data are exported as a pickle readable format file.
 
 Parameters
 ----------
@@ -18,7 +18,6 @@ path : string
 """
 # ============================================================================================= #
 import numpy as np
-import scipy.sparse as sp
 import time
 import os
 import sys
@@ -52,21 +51,26 @@ print('Node BDM for PPI calculated')
 ppi_edgeper = PerturbationExperiment(bdm, bipartite_network=False)
 ppi_edgeper.set_data(np.array(ppi_adj.todense()))
 print("Initial BDM calculated for nodes")
-edgebdm_ppi = ppi_edgeper.node_equivalent()
+add_edgebdm_ppi = ppi_edgeper.run_adding_edges()
+rem_edgebdm_ppi = ppi_edgeper.run_removing_edges()
 print('Edge BDM for PPI calculated')
 # ============================================================================================= #
 # EXPORTING
 genes = len(nodebdm_ppi)
 memUse = ps.memory_info()
 total_time=time.time()-start
-filename = './data_structures/PPI_BDM_genes'+str(genes)+'_'+usrnm+str(jobs)
 output_data = {}
 output_data['nodebdm_ppi'] = nodebdm_ppi
-output_data['edgebdm_ppi'] = edgebdm_ppi
+output_data['add_edgebdm_ppi'] = add_edgebdm_ppi
+output_data['rem_edgebdm_ppi'] = rem_edgebdm_ppi
 output_data['vms_ppi'] = memUse.vms
 output_data['rss_ppi'] = memUse.rss
 output_data['time_ppi'] = total_time
 output_data['jobs_ppi'] = jobs
-with open(filename, 'wb') as f:
+path = os.getcwd()
+words = input_file.split('_')
+output_file = path + '/data_structures/BDM/PPI_BDM_' + words[2] + 'genes' + str(genes) + '_'\
+             + usrnm + str(jobs)
+with open(output_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported')

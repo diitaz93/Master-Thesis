@@ -104,6 +104,8 @@ class PerturbationExperiment:
         if not np.isin(np.unique(X), range(self.bdm.nsymbols)).all():
             raise ValueError("'X' is malformed (too many or ill-mapped symbols)")
         self.X = X
+        if not self.bipartite_network and self.shape[0]!=self.shape[1]:
+            raise ValueError("'X' has to be a squared matrix for non-bipartite network")
         self._counter = self.bdm.decompose_and_count(X)
         if self.metric == 'bdm':
             self._value = self.bdm.compute_bdm(self._counter)
@@ -275,8 +277,17 @@ class PerturbationExperiment:
             arr=np.column_stack((idx, values))
         )
 
-    def node_equivalent(self):
-        """Returns the average complexity value of the edges for each node.
+    def node_equivalent(self,idx=None):
+        """Returns the average complexity value of the edges for each node. This value 
+        is calculated by substracting the value of complexity of the dataset from a new
+        value of complexity of the dataset with a changed edge, i.e., changing a 1 for 
+        a zero or vice versa.
+        
+        Parameters
+        ----------
+        idx : array_like or None
+            *Numpy* integer array providing indexes (in rows) of elements
+            to perturb. If ``None`` then all elements are perturbed.
 
         Returns
         -------
@@ -297,15 +308,72 @@ class PerturbationExperiment:
         array([-0.96990006,  0.51649434, -0.37643584,  0.70535874, -0.16374676,
         1.02257465, -0.32975466,  0.63645683,  0.        ,  0.        ])
         """
-        pert = self.run().reshape(self.shape)
-        if self.bipartite_network:
-            row_nodes = np.mean(pert,axis=1)
-            col_nodes = np.mean(pert,axis=0)
-            return row_nodes,col_nodes
+        if idx is not None:
+            pert = self.run(idx)+0.000001
+            tmp = np.zeros(self.shape)
+            for i in range(len(pert)):
+                tmp[idx[i,0],idx[i,1]] = pert[i]
+            row_nz = np.count_nonzero(tmp,axis=1)
+            row_sum = np.sum(tmp,axis=1)
+            row_nodes = np.nan_to_num(row_sum/row_nz, nan=0.0)
+            if self.bipartite_network:
+                col_sum = np.sum(tmp,axis=0)
+                col_nz = np.count_nonzero(tmp,axis=0)
+                col_nodes = np.nan_to_num(col_sum/col_nz, nan=0.0)
+                return row_nodes,col_nodes
+            else:
+                return row_nodes
         else:
-            return np.mean(pert,axis=0)
-            
-        
+            pert = self.run(idx).reshape(self.shape)
+            if self.bipartite_network:
+                row_nodes = np.mean(pert,axis=1)
+                col_nodes = np.mean(pert,axis=0)
+                return row_nodes,col_nodes
+            else:
+                return np.mean(pert,axis=0)
+
+    def run_adding_edges(self):
+        """ Calls the function node_equivalent with the indices of the zero entries of
+        the matrix. This generates a feature vector(s) whose entries are the expected 
+        changes in complexity of adding a new edge per each node.
+
+        Returns
+        -------
+        array or tuple of arrays :
+            If bipartite_network=True, it returns the value for each node of the corresponding
+            set, being the row nodes the ones of the first array and the column nodes of the
+            second. If bipartite_network=False, the matrix is symmetric and therefore the 
+            row and column nodes are the same, returning only one array.
+        """
+        indices = np.where(self.X==0)
+        idx=[]
+        for i in range(len(indices[0])):
+            idx.append((indices[0][i],indices[1][i]))
+        idx = np.array(idx)
+        return self.node_equivalent(idx)
+
+    
+    def run_removing_edges(self):
+        """ Calls the function node_equivalent with the indices of the non-zero entries of
+        the matrix. This generates a feature vector(s) whose entries are the expected 
+        changes in complexity of deleting an edge per each node.
+
+        Returns
+        -------
+        array or tuple of arrays :
+            If bipartite_network=True, it returns the value for each node of the corresponding
+            set, being the row nodes the ones of the first array and the column nodes of the
+            second. If bipartite_network=False, the matrix is symmetric and therefore the 
+            row and column nodes are the same, returning only one array.
+        """
+        indices = np.where(self.X==1)
+        idx=[]
+        for i in range(len(indices[0])):
+            idx.append((indices[0][i],indices[1][i]))
+        idx = np.array(idx)
+        return self.node_equivalent(idx)        
+
+    
 class NodePerturbationExperiment:
     """Node Perturbation experiment class.
 
