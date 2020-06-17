@@ -1,6 +1,8 @@
 # Custom
 *~
 *#
+
+# Datasets
 data/clean_data/*
 data/original_data/*
 
@@ -13,6 +15,9 @@ DDI_BDM_*
 DTI_BDM_*
 TRAIN_*
 results_training/
+
+# Open office
+*.ods
 
 # Jupyter Notebook
 *.ipynb_checkpoints
