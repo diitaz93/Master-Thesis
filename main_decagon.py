@@ -177,13 +177,14 @@ sess.run(tf.global_variables_initializer())
 feed_dict = {}
 # ============================================================================================= #
 # TRAINING
-acc_scores = np.zeros([num_edge_types,5,1])
+output_data = {}
+acc_scores = np.zeros([num_edge_types,4,1])
 print("Train model")
 for epoch in range(FLAGS.epochs):
-    acc_layer = np.zeros([num_edge_types,5,1])
+    acc_layer = np.zeros([num_edge_types,4,1])
     minibatch.shuffle()
     itr = 0
-    edge_count = 0
+    edge_count = range(num_edge_types)
     while not minibatch.end():
         # Construct feed dictionary
         feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)
@@ -200,33 +201,32 @@ for epoch in range(FLAGS.epochs):
         batch_edge_type = outs[2]
 
         #if itr % PRINT_PROGRESS_EVERY == 0:
-        if batch_edge_type == edge_count:
+        if batch_edge_type in edge_count:
             val_auc, val_auprc, val_apk = get_accuracy_scores(
                 minibatch.val_edges, minibatch.val_edges_false,
                 minibatch.idx2edge_type[minibatch.current_edge_type_idx])
             step_time = time.time() - t
-            acc_layer[edge_count,:,0] = [val_auc,val_auprc,val_apk,train_cost,step_time]
+            acc_layer[batch_edge_type,:,0] = [val_auc,val_auprc,val_apk,train_cost]
             print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), "Edge:",
                   "%04d" % batch_edge_type,
                   "train_loss=", "{:.5f}".format(train_cost),
                   "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
                   "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(step_time))
-            edge_count += 1
-        if edge_count == num_edge_types: 
-            edge_count=0
-            acc_scores = np.concatenate((acc_scores,acc_layer),axis=2)
-            acc_layer = np.zeros([num_edge_types,5,1])
-            print(acc_scores.shape)
+            edge_count.remove(batch_edge_type)
+
         itr += 1
+    acc_scores = np.concatenate((acc_scores,acc_layer),axis=2)
+    output_data['val_auc'] = acc_scores[:,0,1:]
+    output_data['val_auprc'] = acc_scores[:,1,1:]
+    output_data['val_apk'] = acc_scores[:,2,1:]
+    output_data['train_cost'] = acc_scores[:,3,1:]
+    output_data['epoch'] = epoch + 1
+    with open(filename, 'wb') as f:
+        pickle.dump(output_data, f, protocol=2)
+    acc_layer = np.zeros([num_edge_types,5,1])
         
-acc_scores=acc_scores[:,:,1:]
-output_data = {}
-output_data['val_auc'] = acc_scores[:,0,:]
-output_data['val_auprc'] = acc_scores[:,1,:]
-output_data['val_apk'] = acc_scores[:,2,:]
-output_data['train_cost'] = acc_scores[:,3,:]
-output_data['step_time'] = acc_scores[:,4,:]
 print("Optimization finished!")
+final_scores = np.zeros([num_edge_types,4,1])
 for et in range(num_edge_types):
     roc_score, auprc_score, apk_score = get_accuracy_scores(
         minibatch.test_edges, minibatch.test_edges_false, minibatch.idx2edge_type[et])
@@ -235,6 +235,14 @@ for et in range(num_edge_types):
     print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(auprc_score))
     print("Edge type:", "%04d" % et, "Test AP@k score", "{:.5f}".format(apk_score))
     print()
+    final_scores[et,0,0] = roc_score
+    final_scores[et,1,0] = auprc_score
+    final_scores[et,2,0] = apk_score
+acc_scores = np.concatenate((acc_scores,final_scores),axis=2)
+output_data['val_auc'] = acc_scores[:,0,1:]
+output_data['val_auprc'] = acc_scores[:,1,1:]
+output_data['val_apk'] = acc_scores[:,2,1:]
+output_data['train_cost'] = acc_scores[:,3,1:]
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms)
 print('RSS Memory:', memUse.rss)
@@ -245,6 +253,6 @@ output_data['rss'] = memUse.rss
 print("Total time:",total_time)
 filename = 'results_training/'+out_file+'_epochs'+str(FLAGS.epochs)+'_h1'+\
            str(FLAGS.hidden1)+'_h2'+str(FLAGS.hidden2)+'_lr'+str(FLAGS.learning_rate)+\
-           'dropout'+str(FLAGS.dropout)
+           '_dropout'+str(FLAGS.dropout)
 with open(filename, 'wb') as f:
     pickle.dump(output_data, f, protocol=2)
