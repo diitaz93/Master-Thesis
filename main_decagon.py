@@ -1,12 +1,17 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # ============================================================================================= #
-# test.py (currently developing)                                                                #
+# main_decagon.py                                                                               #
 # Author: Juan Sebastian Diaz Boada                                                             #
 # Creation Date: 07/05/2020                                                                     #
 # ============================================================================================= #
 """
-Runs DECAGON over a consistent real dataset with single drug side effects and protein features. 
+Runs DECAGON over a consistent real dataset with single drug side effects and protein features.
+
+Parameters
+----------
+in_file : string
+    (Relative) path to the file of data structures.
 """
 # ============================================================================================= #
 from __future__ import division
@@ -29,13 +34,14 @@ from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
 
+# FILE PATHS
 parser = argparse.ArgumentParser(description='Train DEGAGON')
 parser.add_argument('in_file',type=str, help="Input file with data structures")
-parser.add_argument('out_file',type=str,help="Output file root with TRAIN info")
 args = parser.parse_args()
 in_file = args.in_file
-out_file = args.out_file
-
+words = in_file.split('_')
+DSE = False
+if 'DSE' in words: DSE = True
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 # Train on GPU
@@ -120,6 +126,10 @@ with open(in_file, 'rb') as f:
     for key in DS.keys():
         globals()[key]=DS[key]
         print(key,"Imported successfully")
+n_genes = len(gene2idx)
+n_drugs = len(drug2idx)
+n_se_combo = len(se_combo_name2idx)
+n_se_mono = len(se_mono_name2idx)
 # ============================================================================================= #
 # SETTINGS AND PLACEHOLDERS
 val_test_size = 0.05
@@ -177,6 +187,10 @@ sess.run(tf.global_variables_initializer())
 feed_dict = {}
 # ============================================================================================= #
 # TRAINING
+out_file = 'results_training/TRAIN_'+words[2]+DSE*('_DSE_'+str(n_se_mono))+'_genes_'+\
+            str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
+            str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
+            '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)
 output_data = {}
 acc_scores = np.zeros([num_edge_types,4,1])
 print("Train model")
@@ -221,7 +235,7 @@ for epoch in range(FLAGS.epochs):
     output_data['val_apk'] = acc_scores[:,2,1:]
     output_data['train_cost'] = acc_scores[:,3,1:]
     output_data['epoch'] = epoch + 1
-    with open(filename, 'wb') as f:
+    with open(out_file, 'wb') as f:
         pickle.dump(output_data, f, protocol=2)
     acc_layer = np.zeros([num_edge_types,5,1])
         
@@ -251,8 +265,5 @@ output_data['time'] = total_time
 output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 print("Total time:",total_time)
-filename = 'results_training/'+out_file+'_epochs'+str(FLAGS.epochs)+'_h1'+\
-           str(FLAGS.hidden1)+'_h2'+str(FLAGS.hidden2)+'_lr'+str(FLAGS.learning_rate)+\
-           '_dropout'+str(FLAGS.dropout)
-with open(filename, 'wb') as f:
+with open(out_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=2)
