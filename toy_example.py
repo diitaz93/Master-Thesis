@@ -101,7 +101,7 @@ def construct_placeholders(edge_types):
 #
 ###########################################################
 
-filename = './data/data_structures/DECAGON_toy_no_feat'
+filename = './data/data_structures/DECAGON/DECAGON_toy_test'
 with open(filename, 'rb') as f:
     DS = pickle.load(f)
     for key in DS.keys():

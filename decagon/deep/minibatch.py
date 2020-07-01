@@ -88,20 +88,20 @@ class EdgeMinibatchIterator(object):
         edges_all, _, _ = preprocessing.sparse_to_tuple(self.adj_mats[edge_type][type_idx])
         # Number of test edges (% of all edges or 20)
         num_test = max(20, int(np.floor(edges_all.shape[0] * self.val_test_size)))
-        # Number of train edges (% of all edges or 20)
+        # Number of val edges (% of all edges or 20)
         num_val = max(20, int(np.floor(edges_all.shape[0] * self.val_test_size)))
-
-        all_edge_idx = list(range(edges_all.shape[0])) # orders and indexes edges
+        # orders and indexes edges
+        all_edge_idx = list(range(edges_all.shape[0])) 
         np.random.shuffle(all_edge_idx)
-
+        # Choose validation edges
         val_edge_idx = all_edge_idx[:num_val]
         val_edges = edges_all[val_edge_idx]
-
+        # Choose test edges
         test_edge_idx = all_edge_idx[num_val:(num_val + num_test)]
         test_edges = edges_all[test_edge_idx]
-
+        # Choose train edges as the remaining edges
         train_edges = np.delete(edges_all, np.hstack([test_edge_idx, val_edge_idx]), axis=0)
-        # Test edges
+        # Choose false test edges randomly
         test_edges_false = []
         while len(test_edges_false) < len(test_edges):
             if len(test_edges_false) % 1000 == 0:
@@ -114,7 +114,7 @@ class EdgeMinibatchIterator(object):
                 if self._ismember([idx_i, idx_j], test_edges_false):
                     continue
             test_edges_false.append([idx_i, idx_j])
-        # Validation edges
+        # Choose false validation edges randomly
         val_edges_false = []
         while len(val_edges_false) < len(val_edges):
             if len(val_edges_false) % 1000 == 0:
