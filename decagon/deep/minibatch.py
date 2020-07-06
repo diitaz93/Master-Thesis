@@ -17,6 +17,12 @@ class EdgeMinibatchIterator(object):
     batch_size -- size of the minibatches
     """
     def __init__(self, adj_mats, feat, edge_types, batch_size=100, val_test_size=0.01):
+        """ Creates a minibatch object given the whole dataset in the form of the
+        adjacency and feature matrices. This constructor creates dictionaries with
+        the data divided into minibatches of train, validation and test. Each dictionary
+        contains the adjacency matrix entries' coordinates corresponding to datapoints.
+        It also creates reference dictionaries to translate an edge type to an index.
+        """
         self.adj_mats = adj_mats
         self.feat = feat
         self.edge_types = edge_types
@@ -28,6 +34,7 @@ class EdgeMinibatchIterator(object):
         self.freebatch_edge_types= list(range(self.num_edge_types))
         self.batch_num = [0]*self.num_edge_types
         self.current_edge_type_idx = 0
+        # Reference dictionaries
         self.edge_type2idx = {}
         self.idx2edge_type = {}
         r = 0
@@ -36,7 +43,7 @@ class EdgeMinibatchIterator(object):
                 self.edge_type2idx[i, j, k] = r
                 self.idx2edge_type[r] = i, j, k
                 r += 1
-
+        # Batch dictionaries initialization
         self.train_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.val_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.test_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
@@ -108,10 +115,10 @@ class EdgeMinibatchIterator(object):
                 print("Constructing test edges=", "%04d/%04d" % (len(test_edges_false), len(test_edges)))
             idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
             idx_j = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[1])
-            if self._ismember([idx_i, idx_j], edges_all):
+            if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
                 continue
-            if test_edges_false:
-                if self._ismember([idx_i, idx_j], test_edges_false):
+            if test_edges_false: # test that is not already in false edges
+                if self._ismember([idx_i, idx_j], test_edges_false): 
                     continue
             test_edges_false.append([idx_i, idx_j])
         # Choose false validation edges randomly
@@ -121,14 +128,14 @@ class EdgeMinibatchIterator(object):
                 print("Constructing val edges=", "%04d/%04d" % (len(val_edges_false), len(val_edges)))
             idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
             idx_j = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[1])
-            if self._ismember([idx_i, idx_j], edges_all):
+            if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
                 continue
-            if val_edges_false:
+            if val_edges_false: # test that is not already in false edges
                 if self._ismember([idx_i, idx_j], val_edges_false):
                     continue
             val_edges_false.append([idx_i, idx_j])
 
-        # Re-build adj matrices
+        # Re-build adj matrices with preprocessing
         data = np.ones(train_edges.shape[0])
         adj_train = sp.csr_matrix(
             (data, (train_edges[:, 0], train_edges[:, 1])),
@@ -146,7 +153,6 @@ class EdgeMinibatchIterator(object):
         return finished
 
     def update_feed_dict(self, feed_dict, dropout, placeholders):
-        # construct feed dictionary
         feed_dict.update({
             placeholders['adj_mats_%d,%d,%d' % (i,j,k)]: self.adj_train[i,j][k]
             for i, j in self.edge_types for k in range(self.edge_types[i,j])})
@@ -215,7 +221,7 @@ class EdgeMinibatchIterator(object):
 
     def shuffle(self):
         """ Re-shuffle the training set.
-            Also reset the batch number.
+            Also reset the batch number and the free batch availiable.
         """
         for edge_type in self.edge_types:
             for k in range(self.edge_types[edge_type]):

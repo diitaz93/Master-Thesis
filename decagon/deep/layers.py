@@ -126,11 +126,11 @@ class DEDICOMDecoder(MultiLayer):
         self.act = act
         with tf.variable_scope('%s_vars' % self.name):
             self.vars['global_interaction'] = inits.weight_variable_glorot(
-                input_dim, input_dim, name='global_interaction')
+                input_dim, input_dim, name='global_interaction') # R
             for k in range(self.num_types):
                 tmp = inits.weight_variable_glorot(
                     input_dim, 1, name='local_variation_%d' % k)
-                self.vars['local_variation_%d' % k] = tf.reshape(tmp, [-1])
+                self.vars['local_variation_%d' % k] = tf.reshape(tmp, [-1]) # D_r
 
     def _call(self, inputs):
         i, j = self.edge_type
@@ -181,7 +181,7 @@ class BilinearDecoder(MultiLayer):
         with tf.variable_scope('%s_vars' % self.name):
             for k in range(self.num_types):
                 self.vars['relation_%d' % k] = inits.weight_variable_glorot(
-                    input_dim, input_dim, name='relation_%d' % k)
+                    input_dim, input_dim, name='relation_%d' % k) # M_r
 
     def _call(self, inputs):
         i, j = self.edge_type

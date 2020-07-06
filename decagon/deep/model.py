@@ -16,8 +16,8 @@ class Model(object):
         for kwarg in kwargs.keys():
             assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
         # Duplicado?
-        for kwarg in kwargs.keys():
-            assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
+        #for kwarg in kwargs.keys():
+            #assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
         name = kwargs.get('name')
         if not name:
             name = self.__class__.__name__.lower()
@@ -63,6 +63,8 @@ class DecagonModel(Model):
         self.build()
 
     def _build(self):
+        # ENCODER
+        # First Layer 
         self.hidden1 = defaultdict(list)
         for i, j in self.edge_types:
             self.hidden1[i].append(GraphConvolutionSparseMulti(
@@ -74,7 +76,7 @@ class DecagonModel(Model):
 
         for i, hid1 in self.hidden1.items():
             self.hidden1[i] = tf.nn.relu(tf.add_n(hid1))
-
+        # Second Layer
         self.embeddings_reltyp = defaultdict(list)
         for i, j in self.edge_types:
             self.embeddings_reltyp[i].append(GraphConvolutionMulti(
@@ -87,7 +89,8 @@ class DecagonModel(Model):
         for i, embeds in self.embeddings_reltyp.items():
             # self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
             self.embeddings[i] = tf.add_n(embeds)
-
+            
+        # DECODER
         self.edge_type2decoder = {}
         for i, j in self.edge_types:
             decoder = self.decoders[i, j]
@@ -102,7 +105,7 @@ class DecagonModel(Model):
                     edge_type=(i, j), num_types=self.edge_types[i, j],
                     act=lambda x: x, dropout=self.dropout)
             elif decoder == 'bilinear':
-                        self.edge_type2decoder[i, j] = BilinearDecoder(
+                self.edge_type2decoder[i, j] = BilinearDecoder(
                     input_dim=FLAGS.hidden2, logging=self.logging,
                     edge_type=(i, j), num_types=self.edge_types[i, j],
                     act=lambda x: x, dropout=self.dropout)
