@@ -28,10 +28,11 @@ class DecagonOptimizer(object):
         self.row_inputs = tf.squeeze(gather_cols(self.inputs, [0]))
         self.col_inputs = tf.squeeze(gather_cols(self.inputs, [1]))
 
-        obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))]
-        self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])
-        self.obj_type_lookup_end = tf.cumsum(obj_type_n)
-
+        obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))] #[n_genes,n_drugs]
+        self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])#[0,n_genes]
+        self.obj_type_lookup_end = tf.cumsum(obj_type_n)#[n_genes,n_drugs+n_genes]
+        
+        # Sample negative interactions
         labels = tf.reshape(tf.cast(self.row_inputs, dtype=tf.int64), [self.batch_size, 1])
         neg_samples_list = []
         for i, j in self.edge_types:
