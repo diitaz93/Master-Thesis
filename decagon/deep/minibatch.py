@@ -49,9 +49,7 @@ class EdgeMinibatchIterator(object):
         self.test_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.test_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.val_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
-        ############
         self.train_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
-        ############
         # Function to build test and val sets with val_test_size positive links
         self.adj_train = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         for i, j in self.edge_types:
@@ -89,14 +87,14 @@ class EdgeMinibatchIterator(object):
         return np.any(rows_close)
     
 # Divides the data corresponding to a given edge in test, train and validation
-    def mask_test_edges(self, edge_type, type_idx):
+    def mask_test_edges_fail(self, edge_type, type_idx):
         ''' Selects a fraction of the edges of a given adj matrix to be test and val edges
         given the fraction val_test_edges. Also selects an (equal) number of false edges
         from the zero entries of the matrix to be negative test and val edges.
         '''
         positive, _, dims = preprocessing.sparse_to_tuple(self.adj_mats[edge_type][type_idx])
         indexes = [range(k) for k in dims]
-        idx = np.array([ x for x in product(*indexes) ],dtype=int)
+        idx = np.array([ x for x in product(*indexes) ]).astype('int32')
         mask = np.invert((idx[:, None] == positive).all(-1).any(-1))
         negative = idx[mask]
 
@@ -131,7 +129,6 @@ class EdgeMinibatchIterator(object):
         adj_train = sp.csr_matrix(
             (data, (train_edges[:, 0], train_edges[:, 1])),shape=dims)
         self.adj_train[edge_type][type_idx] = self.preprocess_graph(adj_train)
-
         self.train_edges[edge_type][type_idx] = train_edges
         self.train_edges_false[edge_type][type_idx] = train_edges_false
         self.val_edges[edge_type][type_idx] = val_edges
@@ -139,7 +136,7 @@ class EdgeMinibatchIterator(object):
         self.test_edges[edge_type][type_idx] = test_edges
         self.test_edges_false[edge_type][type_idx] = np.array(test_edges_false)
  
-    def mask_test_edges_old(self, edge_type, type_idx):
+    def mask_test_edges(self, edge_type, type_idx):
         ''' Selects a fraction of the edges of a given adj matrix to be test and val edges
         given the fraction val_test_edges. Also selects an (equal) number of false edges
         from the zero entries of the matrix to be negative test and val edges.
@@ -166,7 +163,8 @@ class EdgeMinibatchIterator(object):
         test_edges_false = []
         while len(test_edges_false) < len(test_edges):
             if len(test_edges_false) % 1000 == 0:
-                print("Constructing test edges=", "%04d/%04d" % (len(test_edges_false), len(test_edges)))
+                print("Constructing test edges=", "%04d/%04d" % 
+                      (len(test_edges_false), len(test_edges)))
             idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
             idx_j = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[1])
             if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
@@ -179,22 +177,40 @@ class EdgeMinibatchIterator(object):
         val_edges_false = []
         while len(val_edges_false) < len(val_edges):
             if len(val_edges_false) % 1000 == 0:
-                print("Constructing val edges=", "%04d/%04d" % (len(val_edges_false), len(val_edges)))
+                print("Constructing val edges=", "%04d/%04d" % 
+                      (len(val_edges_false), len(val_edges)))
             idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
             idx_j = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[1])
             if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
                 continue
             if val_edges_false: # test that is not already in false edges
-                if self._ismember([idx_i, idx_j], val_edges_false):
+                if self._ismember([idx_i, idx_j], val_edges_false) or \
+                   self._ismember([idx_i, idx_j], test_edges_false):
                     continue
             val_edges_false.append([idx_i, idx_j])
+        # Choose false train edges randomly
+        train_edges_false = []
+        while len(train_edges_false) < len(train_edges):
+            if len(train_edges_false) % 1000 == 0:
+                print("Constructing train edges=", "%04d/%04d" % 
+                      (len(train_edges_false), len(train_edges)))
+            idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
+            idx_j = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[1])
+            if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
+                continue
+            if train_edges_false: # test that is not already in false edges
+                if self._ismember([idx_i, idx_j], val_edges_false) or\
+                   self._ismember([idx_i, idx_j], test_edges_false) or\
+                   self._ismember([idx_i, idx_j], train_edges_false):
+                    continue
+            train_edges_false.append([idx_i, idx_j])
         # Re-build adj matrices with preprocessing
         data = np.ones(train_edges.shape[0])
         adj_train = sp.csr_matrix(
             (data, (train_edges[:, 0], train_edges[:, 1])),
             shape=self.adj_mats[edge_type][type_idx].shape)
         self.adj_train[edge_type][type_idx] = self.preprocess_graph(adj_train)
-
+        self.train_edges_false[edge_type][type_idx] = train_edges_false
         self.train_edges[edge_type][type_idx] = train_edges
         self.val_edges[edge_type][type_idx] = val_edges
         self.val_edges_false[edge_type][type_idx] = np.array(val_edges_false)
