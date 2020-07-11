@@ -41,7 +41,9 @@ args = parser.parse_args()
 in_file = args.in_file
 words = in_file.split('_')
 DSE = False
+BDM = False
 if 'DSE' in words: DSE = True
+if 'BDM' in words: BDM = True
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 # Train on GPU
@@ -203,8 +205,8 @@ feed_dict = {}
 # TRAINING
 # Metric structures initialization
 output_data={}
-out_file = 'results_training/TRAIN_'+words[2]+DSE*('_DSE_'+str(n_se_mono))+'_genes_'+\
-            str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
+out_file = 'results_training/TRAIN_'+words[2]+BDM*('_BDM')+DSE*('_DSE_'+str(n_se_mono))\
+            +'_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
             str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
             '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)
 validation_metrics = np.zeros([num_edge_types,3,1])
