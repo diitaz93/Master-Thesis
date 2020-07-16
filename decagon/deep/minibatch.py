@@ -91,6 +91,7 @@ class EdgeMinibatchIterator(object):
         ''' Selects a fraction of the edges of a given adj matrix to be test and val edges
         given the fraction val_test_edges. Also selects an (equal) number of false edges
         from the zero entries of the matrix to be negative test and val edges.
+        ONLY FOR SMALL LOW SPARSITY MATRICES
         '''
         positive, _, dims = preprocessing.sparse_to_tuple(self.adj_mats[edge_type][type_idx])
         indexes = [range(k) for k in dims]
@@ -158,7 +159,6 @@ class EdgeMinibatchIterator(object):
         test_edges = edges_all[test_edge_idx]
         # Choose train edges as the remaining edges
         train_edges = np.delete(edges_all, np.hstack([test_edge_idx, val_edge_idx]), axis=0)
-        #DATA LEAKAGE? MAY CHOOSE SAME EDGE FOR TEST AND VALIDATION
         # Choose false test edges randomly
         test_edges_false = []
         while len(test_edges_false) < len(test_edges):
@@ -231,6 +231,8 @@ class EdgeMinibatchIterator(object):
         return feed_dict
 
     def batch_feed_dict(self, batch_edges, batch_edge_type, placeholders):
+        """ Feed the tensorflow feed dictionary with the edges and indices taken as parameters
+        """
         feed_dict = dict()
         feed_dict.update({placeholders['batch']: batch_edges})
         feed_dict.update({placeholders['batch_edge_type_idx']: batch_edge_type})
@@ -241,7 +243,7 @@ class EdgeMinibatchIterator(object):
 
     def next_minibatch_feed_dict(self, placeholders):
         """Select a random edge type and a batch of edges of the same type"""
-        # 1. Select edge type assigning an index to the edge based on the value of self.iter
+        # 1. Select edge type assigning an index to it based on the value of self.iter
         while True:
             if self.iter % 4 == 0:
                 # gene-gene relation
@@ -277,9 +279,16 @@ class EdgeMinibatchIterator(object):
         return self.batch_feed_dict(batch_edges, self.current_edge_type_idx, placeholders)
 
     def num_training_batches(self, edge_type, type_idx):
+        """ Returns the total number of different batches that can be possible formed
+        with the number of edges in training given the edge type and the index.
+        """
         return len(self.train_edges[edge_type][type_idx]) // self.batch_size + 1
 
     def val_feed_dict(self, edge_type, type_idx, placeholders, size=None):
+        """ Feed the tensorflow feed dictionary with validation edges instead of training
+        edges given the edge type and the index. A size of the dataset (number of edges)
+        can be passed as an optional parameter.
+        """
         edge_list = self.val_edges[edge_type][type_idx]
         if size is None:
             return self.batch_feed_dict(edge_list, edge_type, placeholders)

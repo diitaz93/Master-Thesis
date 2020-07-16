@@ -5,7 +5,8 @@
 # Datasets
 data/clean_data/*
 data/original_data/*
-
+data/small_network/*.csv
+*.xlsx
 # Data structures
 DS_*
 DECAGON_*

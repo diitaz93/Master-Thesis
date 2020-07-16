@@ -20,6 +20,7 @@ from operator import itemgetter
 from itertools import combinations, chain
 import argparse
 import time
+import datetime
 import os
 import tensorflow as tf
 import numpy as np
@@ -44,8 +45,6 @@ DSE = False
 BDM = False
 if 'DSE' in words: DSE = True
 if 'BDM' in words: BDM = True
-# Train on CPU (hide GPU) due to memory constraints
-#os.environ['CUDA_VISIBLE_DEVICES'] = ""
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
@@ -61,61 +60,37 @@ ps= psutil.Process(pid)
 # FUNCTIONS
 def sigmoid(x):
         return 1. / (1 + np.exp(-x))
-def accuracy(edges_pos,edges_neg,pred):
-    """Gives the accuracy of the model given a set of positive and negative entries of 
-    a matrix, and the probability scores of each entry. The method uses np.round to turn
-    probabilities into labels 0 or 1 and feed them to the accuracy_score method of sci-kit
-    learn.
-    """
-    pos_labels = np.ones(np.shape(edges_pos)[0])
-    neg_labels = np.zeros(np.shape(edges_neg)[0])
-    labels = np.hstack((pos_labels,neg_labels))
-    pos_preds=[]
-    scores = np.round(sigmoid(pred))
-    for i,j in edges_pos:
-        pos_preds.append(scores[i,j])
-    neg_preds=[]
-    for i,j in edges_neg:
-        neg_preds.append(scores[i,j])
-    predictions=np.hstack((pos_preds,neg_preds))
-    return metrics.accuracy_score(labels,predictions)
 
 def get_accuracy_scores(edges_pos, edges_neg, edge_type):
+    """ Returns the AUROC, AUPRC and Accuracy of the dataset corresponding to the edge
+    'edge_type' given as a tuple. The parameters 'edges_pos' and 'edges_neg' are the list 
+    of edges of positive and negative interactions respectively of a given dataset, i.e., 
+    train, test or validation.
+    """
     feed_dict.update({placeholders['dropout']: 0})
     feed_dict.update({placeholders['batch_edge_type_idx']: minibatch.edge_type2idx[edge_type]})
     feed_dict.update({placeholders['batch_row_edge_type']: edge_type[0]})
     feed_dict.update({placeholders['batch_col_edge_type']: edge_type[1]})
     rec = sess.run(opt.predictions, feed_dict=feed_dict)
-
     # Predict on set of edges
     preds = []
-    #actual = []
-    #predicted = []
-    edge_ind = 0
-    for u, v in edges_pos[edge_type[:2]][edge_type[2]]:
+    for u, v in edges_pos:
         score = sigmoid(rec[u, v])
         preds.append(score)
         assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] == 1, 'Problem 1'
-        #actual.append(edge_ind)
-        #predicted.append((score, edge_ind))
-        edge_ind += 1
-
     preds_neg = []
-    for u, v in edges_neg[edge_type[:2]][edge_type[2]]:
+    for u, v in edges_neg:
         score = sigmoid(rec[u, v])
         preds_neg.append(score)
         assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] == 0, 'Problem 0'
-        #predicted.append((score, edge_ind))
-        edge_ind += 1
-
     preds_all = np.hstack([preds, preds_neg])
     preds_all = np.nan_to_num(preds_all)
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds_neg))])
-    #predicted = list(zip(*sorted(predicted, reverse=True, key=itemgetter(0))))[1]
+
     roc_sc = metrics.roc_auc_score(labels_all, preds_all)
     aupr_sc = metrics.average_precision_score(labels_all, preds_all)
-    #apk_sc = rank_metrics.apk(actual, predicted, k=50)
     acc = metrics.accuracy_score(labels_all, np.round(preds_all))
+
     return roc_sc, aupr_sc, acc
 
 def construct_placeholders(edge_types):
@@ -161,9 +136,6 @@ flags.DEFINE_float('dropout', 0.1, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('max_margin', 0.1, 'Max margin parameter in hinge loss')
 flags.DEFINE_integer('batch_size', 512, 'minibatch size.')
 flags.DEFINE_boolean('bias', True, 'Bias term.')
-# Important -- Do not evaluate/print validation performance every iteration as it can take
-# substantial amount of time
-#PRINT_PROGRESS_EVERY = 150
 print("Defining placeholders")
 placeholders = construct_placeholders(edge_types)
 # ============================================================================================= #
@@ -201,6 +173,7 @@ print("Initialize session")
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 feed_dict = {}
+pre_train_time = time.time()-start
 # ============================================================================================= #
 # TRAINING
 # Metric structures initialization
@@ -208,17 +181,16 @@ output_data={}
 out_file = 'results_training/TRAIN_'+words[2]+BDM*('_BDM')+DSE*('_DSE_'+str(n_se_mono))\
             +'_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
             str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
-            '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)
-validation_metrics = np.zeros([num_edge_types,3,1])
-train_acc = np.zeros([FLAGS.epochs,num_edge_types])
-val_acc = np.zeros([FLAGS.epochs,num_edge_types])
-vm_layer = np.zeros([num_edge_types,3,1])
+            '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
+            str(val_test_size)
+val_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
+train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
 # Start training
 print("Train model")
 for epoch in range(FLAGS.epochs):
+    t = time.time()
     minibatch.shuffle()
     itr = 0
-    edge_count = range(num_edge_types)
     while not minibatch.end():
         # Construct feed dictionary
         feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)
@@ -226,74 +198,57 @@ for epoch in range(FLAGS.epochs):
             feed_dict=feed_dict,
             dropout=FLAGS.dropout,
             placeholders=placeholders)
-        t = time.time()
-
         # Training step: run single weight update
         outs = sess.run([opt.opt_op, opt.cost, opt.batch_edge_type_idx], feed_dict=feed_dict)
-        train_cost = outs[1]
-        batch_edge_type = outs[2]
-        # Metrics
-        if batch_edge_type in edge_count:
-            val_auc, val_auprc, val_acs = get_accuracy_scores(
-                minibatch.val_edges, minibatch.val_edges_false,
-                minibatch.idx2edge_type[minibatch.current_edge_type_idx])
-            step_time = time.time() - t
-            vm_layer[batch_edge_type,:,0] = [val_auc,val_auprc,val_acs]
-            print("Epoch:", "%04d" % (epoch + 1), "Iter:", "%04d" % (itr + 1), 
-                  "Edge:", "%04d" % batch_edge_type,
-                  "train_loss=", "{:.5f}".format(train_cost),
-                  "val_roc=", "{:.5f}".format(val_auc),
-                  "val_auprc=", "{:.5f}".format(val_auprc),
-                  "val_acc=", "{:.5f}".format(val_acs),
-                  "time=", "{:.5f}".format(step_time))
-            edge_count.remove(batch_edge_type)
+        if (itr+1)%1000==0:print('Iteration',itr)
         itr += 1
-    # Train accuracy over all train data per epoch
+    # Train & validation accuracy over all train data per epoch
+    print('======================================================================================================================')
+    print("Epoch", "%04d" % (epoch + 1),'finished!')
+    print("Time=", "{:.5f}".format(time.time()-t))
     for r in range(num_edge_types):
         i,j,k = minibatch.idx2edge_type[r]
-        true_train_edges = minibatch.train_edges[i,j][k]
-        false_train_edges = minibatch.train_edges_false[i,j][k]
-        true_val_edges = minibatch.val_edges[i,j][k]
-        false_val_edges = minibatch.val_edges_false[i,j][k]
-        feed_dict.update({placeholders['batch_edge_type_idx']:k})
-        feed_dict.update({placeholders['batch_row_edge_type']: i})
-        feed_dict.update({placeholders['batch_col_edge_type']: j})
-        pred = sess.run(opt.predictions,feed_dict=feed_dict)
-        train_acc[epoch,r] = accuracy(true_train_edges,false_train_edges,pred)
-        val_acc[epoch,r] = accuracy(true_val_edges,false_val_edges,pred)
-    validation_metrics = np.concatenate((validation_metrics,vm_layer),axis=2)
-    output_data['val_auc'] = validation_metrics[:,0,1:]
-    output_data['val_auprc'] = validation_metrics[:,1,1:]
-    output_data['train_acc'] = train_acc
-    output_data['val_acc'] = val_acc
+        print('Metrics for ', edge2name[i,j][k])
+        train_metrics[epoch,r,:] = get_accuracy_scores(
+            minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
+        val_metrics[epoch,r,:] = get_accuracy_scores(
+            minibatch.val_edges[i,j][k], minibatch.val_edges_false[i,j][k],(i,j,k))
+        print("AUROC:Train=", "{:.4f}".format(train_metrics[epoch,r,0])
+              ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,0])
+              ,"AUPRC:Train=", "{:.4f}".format(train_metrics[epoch,r,1])
+              ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,1])
+              ,"Accuracy:Train=", "{:.4f}".format(train_metrics[epoch,r,2])
+              ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,2]))
+    output_data['val_metrics'] = val_metrics
+    output_data['train_metrics'] = train_metrics
     output_data['epoch'] = epoch + 1
-    
     with open(out_file,'wb') as f:
         pickle.dump(output_data, f, protocol=2)
-    vm_layer = np.zeros([num_edge_types,3,1])
     
 # End of training. Metric structure handling   
 print("Optimization finished!")
-test_scores = np.zeros([num_edge_types,3])
+test_metrics = np.zeros([num_edge_types,3])
 for et in range(num_edge_types):
-    roc_score, auprc_score, acc_score = get_accuracy_scores(
-        minibatch.test_edges, minibatch.test_edges_false, minibatch.idx2edge_type[et])
-    print("Edge type=", "[%02d, %02d, %02d]" % minibatch.idx2edge_type[et])
-    print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(roc_score))
-    print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(auprc_score))
-    print("Edge type:", "%04d" % et, "Test Accuracy score", "{:.5f}".format(acc_score))
+    i,j,k = minibatch.idx2edge_type[et]
+    test_metrics[et,:] = get_accuracy_scores(
+        minibatch.test_edges[i,j][k], minibatch.test_edges_false[i,j][k], (i,j,k))
+    print("Edge type=", edge2name[i,j][k])
+    print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(test_metrics[et,0]))
+    print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(test_metrics[et,1]))
+    print("Edge type:", "%04d" % et, "Test Accuracy score", "{:.5f}".format(test_metrics[et,2]))
     print()
-    test_scores[et,0] = roc_score
-    test_scores[et,1] = auprc_score
-    test_scores[et,2] = acc_score
-output_data['test_scores'] = test_scores
+output_data['test_metrics'] = test_metrics
 memUse = ps.memory_info()
-print('Virtual memory:', memUse.vms)
-print('RSS Memory:', memUse.rss)
-total_time=time.time()-start
-output_data['time'] = total_time
+print('Virtual memory:', memUse.vms*1e-09,'Gb')
+print('RSS Memory:', memUse.rss*1e-09,'Gb')
+train_time=time.time()-pre_train_time
+output_data['pre_train_time'] = pre_train_time
+output_data['train_time'] = train_time
+output_data['edge2name'] = edge2name
+output_data['drug2idx'] = drug2idx
+output_data['gene2idx'] = gene2idx
 output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 with open(out_file,'wb') as f:
     pickle.dump(output_data, f, protocol=2)
-print("Total time:",total_time)
+print('Total time:', datetime.timedelta(seconds=time.time()-start))
