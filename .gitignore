@@ -5,7 +5,8 @@
 # Datasets
 data/clean_data/*
 data/original_data/*
-data/small_network/*.csv
+data/amir_docking_data/*
+data/old_files/*
 *.xlsx
 # Data structures
 DS_*

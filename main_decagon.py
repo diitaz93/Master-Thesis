@@ -238,7 +238,7 @@ output_data['test_metrics'] = test_metrics
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms*1e-09,'Gb')
 print('RSS Memory:', memUse.rss*1e-09,'Gb')
-train_time=time.time()-pre_train_time
+train_time=time.time()-pre_train_time-start
 output_data['pre_train_time'] = pre_train_time
 output_data['train_time'] = train_time
 output_data['edge2name'] = edge2name
