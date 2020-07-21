@@ -175,7 +175,7 @@ pre_train_time = time.time()-start
 # TRAINING
 # Metric structures initialization
 output_data={}
-out_file = 'results_training/TRAIN_'+words[2]+BDM*('_BDM')+DSE*('_DSE_'+str(n_se_mono))\
+out_file = 'results_training/TRAIN_'+words[2]+DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')\
             +'_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
             str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
             '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
