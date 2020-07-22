@@ -43,8 +43,13 @@ in_file = args.in_file
 words = in_file.split('_')
 DSE = False
 BDM = False
+DOCK = False
+BIND = False
 if 'DSE' in words: DSE = True
 if 'BDM' in words: BDM = True
+if 'docking' in words: DOCK = True
+elif 'binding' in words: BIND = True
+d_text = DOCK*'_docking'+BIND*'_binding'
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
@@ -178,7 +183,7 @@ pre_train_time = time.time()-start
 # TRAINING
 # Metric structures initialization
 output_data={}
-out_file = 'results_training/TRAIN_'+words[2]+DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')\
+out_file = 'results_training/TRAIN_'+words[2]+d_text+DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')\
             +'_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
             str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
             '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
