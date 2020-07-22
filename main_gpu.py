@@ -82,7 +82,7 @@ def get_accuracy_scores(edges_pos, edges_neg, edge_type):
     for u, v in edges_pos:
         score = sigmoid(rec[u, v])
         preds.append(score)
-        assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] == 1, 'Problem 1'
+        assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] > 0, 'Problem 1'
     preds_neg = []
     for u, v in edges_neg:
         score = sigmoid(rec[u, v])
