@@ -141,15 +141,15 @@ flags.DEFINE_boolean('bias', True, 'Bias term.')
 print("Defining placeholders")
 placeholders = construct_placeholders(edge_types)
 # ============================================================================================= #
-# CREATE MINIBATCH ITERATOR, MODEL AND OPTIMIZER
-print("Create minibatch iterator")
-minibatch = EdgeMinibatchIterator(
-    adj_mats=adj_mats_orig,
-    feat=feat,
-    edge_types=edge_types,
-    batch_size=FLAGS.batch_size,
-    val_test_size=val_test_size
-)
+# LOAD MINIBATCH ITERATOR, AND CREATE MODEL AND OPTIMIZER
+print("Load minibatch iterator")
+mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
+            DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')+'_genes_'+str(n_genes)+'_drugs_'+\
+            str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
+            '_valsize_'+str(val_test_size)
+with open(mb_file, 'rb') as f:
+    minibatch = pickle.load(f)
+
 print("Create model")
 model = DecagonModel(
     placeholders=placeholders,
