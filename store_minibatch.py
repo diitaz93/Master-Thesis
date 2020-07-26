@@ -16,6 +16,7 @@ in_file : string
 # ============================================================================================= #
 from __future__ import print_function
 import argparse
+import os
 import time
 import datetime
 import tensorflow as tf
