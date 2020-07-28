@@ -50,7 +50,6 @@ if 'BDM' in words: BDM = True
 if 'docking' in words: DOCK = True
 elif 'binding' in words: BIND = True
 d_text = DOCK*'_docking'+BIND*'_binding'
-noise = 0
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
@@ -67,7 +66,7 @@ ps= psutil.Process(pid)
 def sigmoid(x):
         return 1. / (1 + np.exp(-x))
 
-def get_accuracy_scores(edges_pos, edges_neg, edge_type):
+def get_accuracy_scores(edges_pos, edges_neg, edge_type, noise=False):
     """ Returns the AUROC, AUPRC and Accuracy of the dataset corresponding to the edge
     'edge_type' given as a tuple. The parameters 'edges_pos' and 'edges_neg' are the list 
     of edges of positive and negative interactions respectively of a given dataset, i.e., 
@@ -83,12 +82,14 @@ def get_accuracy_scores(edges_pos, edges_neg, edge_type):
     for u, v in edges_pos:
         score = sigmoid(rec[u, v])
         preds.append(score)
-        assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] > 0, 'Problem 1'
+        if not noise:
+                assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] > 0, 'Problem 1'
     preds_neg = []
     for u, v in edges_neg:
         score = sigmoid(rec[u, v])
         preds_neg.append(score)
-        assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] == 0, 'Problem 0'
+        if not noise:
+                assert adj_mats_orig[edge_type[:2]][edge_type[2]][u,v] == 0, 'Problem 0'
     preds_all = np.hstack([preds, preds_neg])
     preds_all = np.nan_to_num(preds_all)
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds_neg))])
@@ -130,6 +131,7 @@ n_se_mono = len(se_mono_name2idx)
 # ============================================================================================= #
 # SETTINGS AND PLACEHOLDERS
 val_test_size = 0.15
+noise = 0
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('neg_sample_size', 1, 'Negative sample size.')
@@ -146,11 +148,7 @@ print("Defining placeholders")
 placeholders = construct_placeholders(edge_types)
 # ============================================================================================= #
 # LOAD MINIBATCH ITERATOR, AND CREATE MODEL AND OPTIMIZER
-if noise == 0:
-    noise_str = ''
-else:
-    noise_str = '_noise_' + str(noise)
-
+noise_str = bool(noise)*('_noise_' + str(noise))
 print("Load minibatch iterator")
 mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
           '_genes_'+str(n_genes)+'_drugs_'+\
@@ -159,6 +157,7 @@ mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
 with open(mb_file, 'rb') as f:
     minibatch = pickle.load(f)
 minibatch.feat = feat
+print("New features loaded to minibatch")
 
 print("Create model")
 model = DecagonModel(
@@ -243,7 +242,8 @@ test_metrics = np.zeros([num_edge_types,3])
 for et in range(num_edge_types):
     i,j,k = minibatch.idx2edge_type[et]
     test_metrics[et,:] = get_accuracy_scores(
-        minibatch.test_edges[i,j][k], minibatch.test_edges_false[i,j][k], (i,j,k))
+            minibatch.test_edges[i,j][k], minibatch.test_edges_false[i,j][k], (i,j,k),
+            noise=bool(noise))
     print("Edge type=", edge2name[i,j][k])
     print("Edge type:", "%04d" % et, "Test AUROC score", "{:.5f}".format(test_metrics[et,0]))
     print("Edge type:", "%04d" % et, "Test AUPRC score", "{:.5f}".format(test_metrics[et,1]))
