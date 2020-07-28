@@ -22,6 +22,7 @@ import argparse
 import time
 import datetime
 import os
+import warnings
 import tensorflow as tf
 import numpy as np
 import networkx as nx
@@ -60,7 +61,8 @@ config.gpu_options.allow_growth = True
 start = time.time()
 pid = os.getpid()
 ps= psutil.Process(pid)
-
+warnings.filterwarnings("ignore")
+tf.logging.set_verbosity(tf.logging.ERROR)
 # ============================================================================================= #
 # FUNCTIONS
 def sigmoid(x):
