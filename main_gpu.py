@@ -50,6 +50,7 @@ if 'BDM' in words: BDM = True
 if 'docking' in words: DOCK = True
 elif 'binding' in words: BIND = True
 d_text = DOCK*'_docking'+BIND*'_binding'
+noise = 0
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
@@ -145,11 +146,16 @@ print("Defining placeholders")
 placeholders = construct_placeholders(edge_types)
 # ============================================================================================= #
 # LOAD MINIBATCH ITERATOR, AND CREATE MODEL AND OPTIMIZER
+if noise == 0:
+    noise_str = ''
+else:
+    noise_str = '_noise_' + str(noise)
+
 print("Load minibatch iterator")
 mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
           '_genes_'+str(n_genes)+'_drugs_'+\
           str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
-          '_valsize_'+str(val_test_size)
+          '_valsize_'+str(val_test_size) + noise_str
 with open(mb_file, 'rb') as f:
     minibatch = pickle.load(f)
 minibatch.feat = feat
@@ -188,7 +194,7 @@ out_file = 'results_training/TRAIN_'+words[2]+d_text+DSE*('_DSE_'+str(n_se_mono)
             +'_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
             str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
             '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
-            str(val_test_size)
+            str(val_test_size) + noise_str
 val_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
 train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
 # Start training
