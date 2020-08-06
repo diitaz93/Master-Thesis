@@ -27,13 +27,14 @@ class DecagonOptimizer(object):
 
         self.row_inputs = tf.squeeze(gather_cols(self.inputs, [0]))
         self.col_inputs = tf.squeeze(gather_cols(self.inputs, [1]))
-
+        # Indices for selecting the correct (drug or gene) embeddings in the predict functions
         obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))] #[n_genes,n_drugs]
         self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])#[0,n_genes]
         self.obj_type_lookup_end = tf.cumsum(obj_type_n)#[n_genes,n_drugs+n_genes]
         
         # Sample negative interactions
-        labels = tf.reshape(tf.cast(self.row_inputs, dtype=tf.int64), [self.batch_size, 1])
+        # sample row indices (labels) per training example with a probability proportional to degree
+        labels = tf.reshape(tf.cast(self.row_inputs, dtype=tf.int64), [self.batch_size, 1])#rowsinp
         neg_samples_list = []
         for i, j in self.edge_types:
             for k in range(self.edge_types[i,j]):
@@ -42,9 +43,9 @@ class DecagonOptimizer(object):
                     num_true=1,
                     num_sampled=self.batch_size,
                     unique=False,
-                    range_max=len(self.degrees[i][k]),
+                    range_max=len(self.degrees[i][k]), # number of nodes
                     distortion=0.75,
-                    unigrams=self.degrees[i][k].tolist())
+                    unigrams=self.degrees[i][k].tolist()) # higher degree more probability
                 neg_samples_list.append(neg_samples)
         self.neg_samples = tf.gather(neg_samples_list, self.batch_edge_type_idx)
 
@@ -61,23 +62,28 @@ class DecagonOptimizer(object):
         self._build()
 
     def batch_predict(self, row_inputs, col_inputs):
+        ''' Returns a 2D tensor of dimension n_ixn_j with the probabilities of each pair of given
+        nodes of belonging to the category represented by self.batch_edge_type_idx.
+        Recieves as input the row and column indices of the minibatch examples.
+        '''
         concatenated = tf.concat(self.embeddings, 0)
-
+        # Choose between drug and gene embeddings depending on the edge type
+        # Rows
         ind_start = tf.gather(self.obj_type_lookup_start, self.batch_row_edge_type)
         ind_end = tf.gather(self.obj_type_lookup_end, self.batch_row_edge_type)
         indices = tf.range(ind_start, ind_end)
         row_embeds = tf.gather(concatenated, indices)
         row_embeds = tf.gather(row_embeds, row_inputs)
-
+        # Cols
         ind_start = tf.gather(self.obj_type_lookup_start, self.batch_col_edge_type)
         ind_end = tf.gather(self.obj_type_lookup_end, self.batch_col_edge_type)
         indices = tf.range(ind_start, ind_end)
         col_embeds = tf.gather(concatenated, indices)
         col_embeds = tf.gather(col_embeds, col_inputs)
-
+        # Choose the appropiate weight tensor
         latent_inter = tf.gather(self.latent_inters, self.batch_edge_type_idx)
         latent_var = tf.gather(self.latent_varies, self.batch_edge_type_idx)
-
+        # Perform the decoder tensor multiplication
         product1 = tf.matmul(row_embeds, latent_var)
         product2 = tf.matmul(product1, latent_inter)
         product3 = tf.matmul(product2, latent_var)
@@ -86,20 +92,21 @@ class DecagonOptimizer(object):
 
     def predict(self):
         concatenated = tf.concat(self.embeddings, 0)
-
+        # Choose between drug and gene embeddings depending on the edge type
+        # Rows
         ind_start = tf.gather(self.obj_type_lookup_start, self.batch_row_edge_type)
         ind_end = tf.gather(self.obj_type_lookup_end, self.batch_row_edge_type)
         indices = tf.range(ind_start, ind_end)
         row_embeds = tf.gather(concatenated, indices)
-
+        # Cols
         ind_start = tf.gather(self.obj_type_lookup_start, self.batch_col_edge_type)
         ind_end = tf.gather(self.obj_type_lookup_end, self.batch_col_edge_type)
         indices = tf.range(ind_start, ind_end)
         col_embeds = tf.gather(concatenated, indices)
-
+        # Choose the appropiate weight tensor
         latent_inter = tf.gather(self.latent_inters, self.batch_edge_type_idx)
         latent_var = tf.gather(self.latent_varies, self.batch_edge_type_idx)
-
+        # Perform the decoder tensor multiplication
         product1 = tf.matmul(row_embeds, latent_var)
         product2 = tf.matmul(product1, latent_inter)
         product3 = tf.matmul(product2, latent_var)
