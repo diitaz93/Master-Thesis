@@ -216,11 +216,13 @@ class EdgeMinibatchIterator(object):
                    <= len(self.train_edges[i,j][k]) - self.batch_size + 1:
                 break
             else:
+                # This seems to restart the batch for non-DDI edges if the batch has finished
+                # Consecuence: these edges train until the DDI edges are finished
                 if self.iter % 4 in [0, 1, 2]:
                     self.batch_num[self.current_edge_type_idx] = 0
                 else:
                     self.freebatch_edge_types.remove(self.current_edge_type_idx)
-
+        # 3. Update batch in placeholder with only the batch edges
         self.iter += 1
         start = self.batch_num[self.current_edge_type_idx] * self.batch_size
         self.batch_num[self.current_edge_type_idx] += 1
@@ -247,7 +249,7 @@ class EdgeMinibatchIterator(object):
             return self.batch_feed_dict(val_edges, edge_type, placeholders)
 
     def shuffle(self):
-        """ Re-shuffle the training set.
+        """ Re-shuffle the training set for all edge types.
             Also reset the batch number and the free batch availiable.
         """
         for edge_type in self.edge_types:

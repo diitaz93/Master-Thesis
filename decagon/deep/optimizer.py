@@ -15,6 +15,7 @@ class DecagonOptimizer(object):
         self.edge_types = edge_types
         self.degrees = degrees
         self.edge_type2dim = edge_type2dim
+        #{ngenes;,ndrugs}
         self.obj_type2n = {i: self.edge_type2dim[i,j][0][0] for i, j in self.edge_types}
         self.margin = margin
         self.neg_sample_weights = neg_sample_weights
@@ -41,9 +42,9 @@ class DecagonOptimizer(object):
                 neg_samples, _, _ = tf.nn.fixed_unigram_candidate_sampler(
                     true_classes=labels,
                     num_true=1,
-                    num_sampled=self.batch_size,
+                    num_sampled=self.batch_size, #length of output
                     unique=False,
-                    range_max=len(self.degrees[i][k]), # number of nodes
+                    range_max=len(self.degrees[i][k]), # number of nodes, range for sampling
                     distortion=0.75,
                     unigrams=self.degrees[i][k].tolist()) # higher degree more probability
                 neg_samples_list.append(neg_samples)
@@ -63,7 +64,7 @@ class DecagonOptimizer(object):
 
     def batch_predict(self, row_inputs, col_inputs):
         ''' Returns a 2D tensor of dimension n_ixn_j with the probabilities of each pair of given
-        nodes of belonging to the category represented by self.batch_edge_type_idx.
+        nodes belonging to the category represented by self.batch_edge_type_idx.
         Recieves as input the row and column indices of the minibatch examples.
         '''
         concatenated = tf.concat(self.embeddings, 0)
@@ -73,12 +74,14 @@ class DecagonOptimizer(object):
         ind_end = tf.gather(self.obj_type_lookup_end, self.batch_row_edge_type)
         indices = tf.range(ind_start, ind_end)
         row_embeds = tf.gather(concatenated, indices)
+        # Selects only row embeddings of nodes present in minibatch
         row_embeds = tf.gather(row_embeds, row_inputs)
         # Cols
         ind_start = tf.gather(self.obj_type_lookup_start, self.batch_col_edge_type)
         ind_end = tf.gather(self.obj_type_lookup_end, self.batch_col_edge_type)
         indices = tf.range(ind_start, ind_end)
         col_embeds = tf.gather(concatenated, indices)
+        # Selects only column embeddings of nodes present in minibatch
         col_embeds = tf.gather(col_embeds, col_inputs)
         # Choose the appropiate weight tensor
         latent_inter = tf.gather(self.latent_inters, self.batch_edge_type_idx)
@@ -91,6 +94,11 @@ class DecagonOptimizer(object):
         return preds
 
     def predict(self):
+        ''' Performs the calculation of probabilities of belonging to the class given by
+        self.bacth_edge_type_idx of each pair of nodes present in the whole dataset. 
+        Saves the probabilities in the tensor self.predictions. It is
+        the same calculation done in batch predict but in all dataset.
+        '''
         concatenated = tf.concat(self.embeddings, 0)
         # Choose between drug and gene embeddings depending on the edge type
         # Rows
@@ -116,7 +124,7 @@ class DecagonOptimizer(object):
         #self.cost = self._hinge_loss(self.outputs, self.neg_outputs)
         self.cost = self._xent_loss(self.outputs, self.neg_outputs)
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-        #  TO SOLVE: This function makes the dense tensor
+        #  TO SOLVE (by SNAPS): This function makes the dense tensor
         self.opt_op = self.optimizer.minimize(self.cost)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
