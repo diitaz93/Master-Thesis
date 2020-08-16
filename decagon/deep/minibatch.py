@@ -50,8 +50,8 @@ class EdgeMinibatchIterator(object):
         self.test_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.val_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.train_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
-        # Function to build test and val sets with val_test_size positive links
         self.adj_train = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
+        # Function to build test and val sets with val_test_size positive links
         for i, j in self.edge_types:
             for k in range(self.edge_types[i,j]):
                 print("Minibatch edge type:", "(%d, %d, %d)" % (i, j, k))
@@ -210,7 +210,7 @@ class EdgeMinibatchIterator(object):
                 else:
                     self.current_edge_type_idx = self.edge_type2idx[0, 0, 0]
                     self.iter = 0
-        # 2. Check if there are enough train instances left to fill a batch 
+            # Check if there are enough train instances left to fill a batch 
             i, j, k = self.idx2edge_type[self.current_edge_type_idx]
             if self.batch_num[self.current_edge_type_idx] * self.batch_size \
                    <= len(self.train_edges[i,j][k]) - self.batch_size + 1:
@@ -222,7 +222,7 @@ class EdgeMinibatchIterator(object):
                     self.batch_num[self.current_edge_type_idx] = 0
                 else:
                     self.freebatch_edge_types.remove(self.current_edge_type_idx)
-        # 3. Update batch in placeholder with only the batch edges
+        # 2. Update batch in placeholder with only the batch edges
         self.iter += 1
         start = self.batch_num[self.current_edge_type_idx] * self.batch_size
         self.batch_num[self.current_edge_type_idx] += 1
