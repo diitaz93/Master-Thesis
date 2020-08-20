@@ -15,7 +15,7 @@ class DecagonOptimizer(object):
         self.edge_types = edge_types
         self.degrees = degrees
         self.edge_type2dim = edge_type2dim
-        #{ngenes;,ndrugs}
+        #{ngenes;ndrugs}
         self.obj_type2n = {i: self.edge_type2dim[i,j][0][0] for i, j in self.edge_types}
         self.margin = margin
         self.neg_sample_weights = neg_sample_weights
@@ -49,7 +49,7 @@ class DecagonOptimizer(object):
                     unigrams=self.degrees[i][k].tolist()) # higher degree more probability
                 neg_samples_list.append(neg_samples)
         self.neg_samples = tf.gather(neg_samples_list, self.batch_edge_type_idx)
-
+        
         self.preds = self.batch_predict(self.row_inputs, self.col_inputs)
         self.outputs = tf.diag_part(self.preds)
         self.outputs = tf.reshape(self.outputs, [-1])

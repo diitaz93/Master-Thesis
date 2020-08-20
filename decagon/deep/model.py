@@ -29,19 +29,27 @@ class Model(object):
         self.vars = {}
 
     def _build(self):
+        """ Funtion to be overrriden by the child classes."""
         raise NotImplementedError
 
     def build(self):
         """ Wrapper for _build() """
         with tf.variable_scope(self.name):
             self._build()
+        # This makes the variables created in the model availiable for updating and training
         variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
         self.vars = {var.name: var for var in variables}
 
     def fit(self):
+        """ Ignore, probably meant for another model. The equivalent for DECAGON is implemented in
+        optimization.
+        """
         pass
 
     def predict(self):
+        """ Ignore, probably meant for another model. The equivalent for DECAGON is implemented in
+        optimization.
+        """
         pass
 
 
@@ -73,7 +81,7 @@ class DecagonModel(Model):
                 adj_mats=self.adj_mats, nonzero_feat=self.nonzero_feat,
                 act=lambda x: x, dropout=self.dropout,
                 logging=self.logging)(self.inputs[j]))
-
+        # Why is the activation function implemented later and not as input of the layer? -Seb
         for i, hid1 in self.hidden1.items():
             self.hidden1[i] = tf.nn.relu(tf.add_n(hid1))
         # Second Layer
@@ -87,7 +95,8 @@ class DecagonModel(Model):
 
         self.embeddings = [None] * self.num_obj_types
         for i, embeds in self.embeddings_reltyp.items():
-            # self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
+            # Why is this commented? No activation function in the 2nd layer -Sebastian 
+            # self.embeddings[i] = tf.nn.relu(tf.add_n(embeds)) -SNAP
             self.embeddings[i] = tf.add_n(embeds)
             
         # DECODER
@@ -116,7 +125,7 @@ class DecagonModel(Model):
                     act=lambda x: x, dropout=self.dropout)
             else:
                 raise ValueError('Unknown decoder type')
-
+# Could not these for loops be merged in one? Is the one above necessary? It is never used again
         self.latent_inters = []
         self.latent_varies = []
         for edge_type in self.edge_types:

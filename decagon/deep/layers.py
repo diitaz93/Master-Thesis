@@ -124,6 +124,7 @@ class DEDICOMDecoder(MultiLayer):
         super(DEDICOMDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
+        # Creation of trainable matrices
         with tf.variable_scope('%s_vars' % self.name):
             self.vars['global_interaction'] = inits.weight_variable_glorot(
                 input_dim, input_dim, name='global_interaction') # R
@@ -153,6 +154,7 @@ class DistMultDecoder(MultiLayer):
         super(DistMultDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
+        # Creation of trainable matrices
         with tf.variable_scope('%s_vars' % self.name):
             for k in range(self.num_types):
                 tmp = inits.weight_variable_glorot(
@@ -178,6 +180,7 @@ class BilinearDecoder(MultiLayer):
         super(BilinearDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
+        # Creation of trainable matrices
         with tf.variable_scope('%s_vars' % self.name):
             for k in range(self.num_types):
                 self.vars['relation_%d' % k] = inits.weight_variable_glorot(
