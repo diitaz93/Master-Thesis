@@ -77,6 +77,11 @@ out_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
             str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(batch_size)+\
             '_valsize_'+str(val_test_size)
 print(out_file)
+data = {}
+data['minibatch'] = minibatch
+data['mb_vms'] = memUse.vms
+data['mb_rss'] = memUse.rss
+data['mb_time'] = time.time()-start
 with open(out_file,'wb') as f:
     pickle.dump(minibatch, f, protocol=2)
 memUse = ps.memory_info()

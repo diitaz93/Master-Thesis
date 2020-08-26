@@ -154,7 +154,10 @@ mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
           str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
           '_valsize_'+str(val_test_size) + noise_str
 with open(mb_file, 'rb') as f:
-    minibatch = pickle.load(f)
+    MB = pickle.load(f)
+    for key in MB.keys():
+        globals()[key]=MB[key]
+        print(key,"Imported successfully")
 minibatch.feat = feat
 print("New features loaded to minibatch")
 
@@ -183,7 +186,6 @@ print("Initialize session")
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 feed_dict = {}
-pre_train_time = time.time()-start
 # ============================================================================================= #
 # TRAINING
 # Metric structures initialization
@@ -252,8 +254,8 @@ output_data['test_metrics'] = test_metrics
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms*1e-09,'Gb')
 print('RSS Memory:', memUse.rss*1e-09,'Gb')
-train_time=time.time()-pre_train_time-start
-output_data['pre_train_time'] = pre_train_time
+train_time=time.time()-start
+output_data['mb_time'] = mb_time
 output_data['train_time'] = train_time
 output_data['edge2name'] = edge2name
 output_data['drug2idx'] = drug2idx
@@ -262,4 +264,4 @@ output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 with open(out_file,'wb') as f:
     pickle.dump(output_data, f, protocol=2)
-print('Total time:', datetime.timedelta(seconds=time.time()-start))
+print('Total time:', datetime.timedelta(seconds=train_time))
