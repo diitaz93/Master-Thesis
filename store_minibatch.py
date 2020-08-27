@@ -31,23 +31,13 @@ parser.add_argument('in_file',type=str, help="Input file with data structures")
 args = parser.parse_args()
 in_file = args.in_file
 words = in_file.split('_')
-DSE = False
-BDM = False
-DOCK = False
-BIND = False
-if 'DSE' in words: DSE = True
-if 'BDM' in words: BDM = True
-if 'docking' in words: DOCK = True
-elif 'binding' in words: BIND = True
-d_text = DOCK*'_docking'+BIND*'_binding'
-
+add_str = ''
 # BEGIN
 start = time.time()
 pid = os.getpid()
 ps= psutil.Process(pid)
 # ============================================================================================= #
 # LOAD DATA STRUCTURE
-
 with open(in_file, 'rb') as f:
     DS = pickle.load(f)
     for key in DS.keys():
@@ -72,10 +62,9 @@ minibatch = EdgeMinibatchIterator(
 )
 # ============================================================================================= #
 # EXPORT DATA
-out_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
-            DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')+'_genes_'+str(n_genes)+'_drugs_'+\
-            str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(batch_size)+\
-            '_valsize_'+str(val_test_size)
+out_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+ add_str + words[2]+\
+            '_genes_' + str(n_genes) + '_drugs_'+ str(n_drugs) + '_se_' + str(n_se_combo)+\
+            '_batchsize_'+str(batch_size)+'_valsize_'+str(val_test_size)
 print(out_file)
 memUse = ps.memory_info()
 data = {}
