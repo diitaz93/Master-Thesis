@@ -46,8 +46,7 @@ with open(in_file, 'rb') as f:
 n_genes = len(gene2idx)
 n_drugs = len(drug2idx)
 n_se_combo = len(se_combo_name2idx)
-n_se_mono = len(se_mono_name2idx)
-print(n_genes,n_drugs,n_se_combo,n_se_mono,DSE)
+print(n_genes,n_drugs,n_se_combo)
 val_test_size = 0.15
 batch_size = 512
 # ============================================================================================= #
