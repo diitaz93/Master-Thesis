@@ -196,7 +196,7 @@ out_file = 'results_training/TRAIN_'+words[2]+d_text+DSE*('_DSE_'+str(n_se_mono)
             '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
             str(val_test_size) + noise_str
 val_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
-train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
+#train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
 # Start training
 print("Train model")
 for epoch in range(FLAGS.epochs):
@@ -221,18 +221,18 @@ for epoch in range(FLAGS.epochs):
     for r in range(num_edge_types):
         i,j,k = minibatch.idx2edge_type[r]
         print('Metrics for ', edge2name[i,j][k])
-        train_metrics[epoch,r,:] = get_accuracy_scores(
-            minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
+        #train_metrics[epoch,r,:] = get_accuracy_scores(
+            #minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
         val_metrics[epoch,r,:] = get_accuracy_scores(
             minibatch.val_edges[i,j][k], minibatch.val_edges_false[i,j][k],(i,j,k))
-        print("AUROC:Train=", "{:.4f}".format(train_metrics[epoch,r,0])
+        print("AUROC:"#Train=", "{:.4f}".format(train_metrics[epoch,r,0])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,0])
-              ,"AUPRC:Train=", "{:.4f}".format(train_metrics[epoch,r,1])
+              ,"AUPRC:"#Train=", "{:.4f}".format(train_metrics[epoch,r,1])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,1])
-              ,"Accuracy:Train=", "{:.4f}".format(train_metrics[epoch,r,2])
+              ,"Accuracy:"#Train=", "{:.4f}".format(train_metrics[epoch,r,2])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,2]))
     output_data['val_metrics'] = val_metrics
-    output_data['train_metrics'] = train_metrics
+    #output_data['train_metrics'] = train_metrics
     output_data['epoch'] = epoch + 1
     with open(out_file,'wb') as f:
         pickle.dump(output_data, f, protocol=2)

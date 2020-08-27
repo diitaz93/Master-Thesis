@@ -171,6 +171,8 @@ class EdgeMinibatchIterator(object):
         return finished
 
     def update_feed_dict(self, feed_dict, dropout, placeholders):
+        """ Construct feed dictionary 
+        """
         feed_dict.update({
             placeholders['adj_mats_%d,%d,%d' % (i,j,k)]: self.adj_train[i,j][k]
             for i, j in self.edge_types for k in range(self.edge_types[i,j])})
