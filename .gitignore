@@ -19,6 +19,7 @@ DTI_BDM_*
 TRAIN_*
 MINIBATCH*
 results_training/
+data/data_structures/*
 
 # Open office
 *.ods
