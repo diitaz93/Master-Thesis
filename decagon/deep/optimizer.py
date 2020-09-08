@@ -126,7 +126,7 @@ class DecagonOptimizer(object):
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         #  TO SOLVE (by SNAPS): This function makes the dense tensor
         self.opt_op = self.optimizer.minimize(self.cost)
-        self.grads_vars = self.optimizer.compute_gradients(self.cost)
+        #self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
     def _hinge_loss(self, aff, neg_aff):
         """Maximum-margin optimization using the hinge loss."""

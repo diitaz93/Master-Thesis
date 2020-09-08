@@ -92,7 +92,7 @@ class DecagonModel(Model):
         self.embeddings = [None] * self.num_obj_types
         for i, embeds in self.embeddings_reltyp.items():
             # Why is this commented? No activation function in the 2nd layer -Sebastian 
-            self.embeddings[i] = tf.nn.relu(tf.add_n(embeds)) -SNAP
+            self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
             # self.embeddings[i] = tf.add_n(embeds)
             
         # DECODER
