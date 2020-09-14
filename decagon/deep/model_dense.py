@@ -1,0 +1,122 @@
+from collections import defaultdict
+
+import tensorflow as tf
+
+from .layers import GraphConvolutionMulti, GraphConvolutionSparseMulti, DEDICOMDecoder, BilinearDecoder
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+
+class Model(object):
+    def __init__(self, **kwargs):
+        allowed_kwargs = {'name', 'logging'}
+        
+        for kwarg in kwargs.keys():
+            assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
+            
+        name = kwargs.get('name')
+        if not name:
+            name = self.__class__.__name__.lower()
+        self.name = name
+
+        logging = kwargs.get('logging', False)
+        self.logging = logging
+
+        self.vars = {}
+
+    def _build(self):
+        """ Funtion to be overrriden by the child classes."""
+        raise NotImplementedError
+
+    def build(self):
+        """ Wrapper for _build() """
+        with tf.variable_scope(self.name):
+            self._build()
+        # This makes the variables created in the model availiable for updating and training
+        variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+        self.vars = {var.name: var for var in variables}
+
+    def fit(self):
+        """ Ignore, probably meant for another model. The equivalent for DECAGON is implemented in
+        optimization.
+        """
+        pass
+
+    def predict(self):
+        """ Ignore, probably meant for another model. The equivalent for DECAGON is implemented in
+        optimization.
+        """
+        pass
+
+
+class DecagonModel(Model):
+    def __init__(self, placeholders, num_feat, nonzero_feat, edge_types, decoders, **kwargs):
+        super(DecagonModel, self).__init__(**kwargs)
+        self.edge_types = edge_types
+        self.num_edge_types = sum(self.edge_types.values())
+        self.num_obj_types = max([i for i, _ in self.edge_types]) + 1
+        self.decoders = decoders
+        self.inputs = {i: placeholders['feat_%d' % i] for i, _ in self.edge_types}
+        self.input_dim = num_feat
+        self.nonzero_feat = nonzero_feat
+        self.placeholders = placeholders
+        self.dropout = placeholders['dropout']
+        self.adj_mats = {et: [
+            placeholders['adj_mats_%d,%d,%d' % (et[0], et[1], k)] for k in range(n)]
+            for et, n in self.edge_types.items()}
+        self.build()
+
+    def _build(self):
+        # ENCODER
+        # First Layer 
+        self.hidden1 = defaultdict(list)
+        for i, j in self.edge_types:
+            self.hidden1[i].append(GraphConvolutionMulti(
+                input_dim=self.input_dim[j], output_dim=FLAGS.hidden1,
+                edge_type=(i,j), num_types=self.edge_types[i,j],
+                adj_mats=self.adj_mats,
+                act=lambda x: x, dropout=self.dropout,
+                logging=self.logging)(tf.convert_to_tensor(self.inputs[j])))
+        # Why is the activation function implemented later and not as input of the layer? -Seb
+        for i, hid1 in self.hidden1.items():
+            self.hidden1[i] = tf.nn.relu(tf.add_n(hid1))
+        # Second Layer
+        self.embeddings_reltyp = defaultdict(list)
+        for i, j in self.edge_types:
+            self.embeddings_reltyp[i].append(GraphConvolutionMulti(
+                input_dim=FLAGS.hidden1, output_dim=FLAGS.hidden2,
+                edge_type=(i,j), num_types=self.edge_types[i,j],
+                adj_mats=self.adj_mats, act=lambda x: x,
+                dropout=self.dropout, logging=self.logging)(self.hidden1[j]))
+
+        self.embeddings = [None] * self.num_obj_types
+        for i, embeds in self.embeddings_reltyp.items():
+            # Why is this commented? No activation function in the 2nd layer -Sebastian 
+            self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
+            # self.embeddings[i] = tf.add_n(embeds)
+            
+        # DECODER
+        self.latent_inters = []
+        self.latent_varies = []
+        for edge_type in self.edge_types:
+            decoder = self.decoders[edge_type]
+            for k in range(self.edge_types[edge_type]):
+                if decoder == 'bilinear':
+                    layer = BilinearDecoder(
+                    input_dim=FLAGS.hidden2, logging=self.logging,
+                    edge_type=(i, j), num_types=self.edge_types[i, j],
+                    act=lambda x: x, dropout=self.dropout)
+                    glb = layer.vars['relation_%d' % k]
+                    loc = tf.eye(FLAGS.hidden2, FLAGS.hidden2)
+                elif decoder == 'dedicom':
+                    layer = DEDICOMDecoder(
+                    input_dim=FLAGS.hidden2, logging=self.logging,
+                    edge_type=(i, j), num_types=self.edge_types[i, j],
+                    act=lambda x: x, dropout=self.dropout)
+                    glb = layer.vars['global_interaction']
+                    loc = tf.diag(layer.vars['local_variation_%d' % k])
+                else:
+                    raise ValueError('Unknown decoder type')
+
+                self.latent_inters.append(glb)
+                self.latent_varies.append(loc)
