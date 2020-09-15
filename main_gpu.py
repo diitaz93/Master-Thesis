@@ -1,12 +1,15 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # ============================================================================================= #
-# main_decagon.py                                                                               #
+# main_gpu.py                                                                               #
 # Author: Juan Sebastian Diaz Boada                                                             #
 # Creation Date: 07/05/2020                                                                     #
 # ============================================================================================= #
 """
-Runs DECAGON over a consistent real dataset with single drug side effects and protein features.
+Runs DECAGON over a consistent real dataset. A file containing the parameters of the simulation
+and the data structures is loaded. It contains the features which are used, that can be None,
+Single drug side effects, Algortithmic complaxity of the subnetworks or both.
+This scripts runs the code on GPU.
 
 Parameters
 ----------
@@ -32,7 +35,7 @@ import pandas as pd
 import psutil
 import pickle
 from decagon.deep.optimizer import DecagonOptimizer
-from decagon.deep.model import DecagonModel
+from decagon.deep.model_red import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
 
@@ -48,12 +51,10 @@ DOCK = False
 BIND = False
 if 'DSE' in words: DSE = True
 if 'BDM' in words: BDM = True
-if 'docking' in words: DOCK = True
-elif 'binding' in words: BIND = True
-d_text = DOCK*'_docking'+BIND*'_binding'
+d_text = ''
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
@@ -186,7 +187,6 @@ print("Initialize session")
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 feed_dict = {}
-pre_train_time = time.time()-start
 # ============================================================================================= #
 # TRAINING
 # Metric structures initialization
@@ -197,12 +197,12 @@ out_file = 'results_training/TRAIN_'+words[2]+d_text+DSE*('_DSE_'+str(n_se_mono)
             '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
             str(val_test_size) + noise_str
 val_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
-train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
+#train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
 # Start training
 print("Train model")
 for epoch in range(FLAGS.epochs):
-    t = time.time()
     minibatch.shuffle()
+    t = time.time()
     itr = 0
     while not minibatch.end():
         # Construct feed dictionary
@@ -213,27 +213,27 @@ for epoch in range(FLAGS.epochs):
             placeholders=placeholders)
         # Training step: run single weight update
         outs = sess.run([opt.opt_op, opt.cost, opt.batch_edge_type_idx], feed_dict=feed_dict)
-        if (itr+1)%1000==0:print('Iteration',itr)
+        if (itr+1)%1000==0:print('Iteration',itr,' of epoch',epoch)
         itr += 1
     # Train & validation accuracy over all train data per epoch
-    print('======================================================================================================================')
+    print('===============================================================================')
     print("Epoch", "%04d" % (epoch + 1),'finished!')
     print("Time=", "{:.5f}".format(time.time()-t))
     for r in range(num_edge_types):
         i,j,k = minibatch.idx2edge_type[r]
         print('Metrics for ', edge2name[i,j][k])
-        train_metrics[epoch,r,:] = get_accuracy_scores(
-            minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
+        #train_metrics[epoch,r,:] = get_accuracy_scores(
+            #minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
         val_metrics[epoch,r,:] = get_accuracy_scores(
             minibatch.val_edges[i,j][k], minibatch.val_edges_false[i,j][k],(i,j,k))
-        print("AUROC:Train=", "{:.4f}".format(train_metrics[epoch,r,0])
+        print("AUROC:"#Train=", "{:.4f}".format(train_metrics[epoch,r,0])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,0])
-              ,"AUPRC:Train=", "{:.4f}".format(train_metrics[epoch,r,1])
+              ,"AUPRC:"#Train=", "{:.4f}".format(train_metrics[epoch,r,1])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,1])
-              ,"Accuracy:Train=", "{:.4f}".format(train_metrics[epoch,r,2])
+              ,"Accuracy:"#Train=", "{:.4f}".format(train_metrics[epoch,r,2])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,2]))
     output_data['val_metrics'] = val_metrics
-    output_data['train_metrics'] = train_metrics
+    #output_data['train_metrics'] = train_metrics
     output_data['epoch'] = epoch + 1
     with open(out_file,'wb') as f:
         pickle.dump(output_data, f, protocol=2)
@@ -255,8 +255,7 @@ output_data['test_metrics'] = test_metrics
 memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms*1e-09,'Gb')
 print('RSS Memory:', memUse.rss*1e-09,'Gb')
-train_time=time.time()-pre_train_time-start
-output_data['pre_train_time'] = pre_train_time
+train_time=time.time()-start
 output_data['train_time'] = train_time
 output_data['edge2name'] = edge2name
 output_data['drug2idx'] = drug2idx
@@ -265,4 +264,4 @@ output_data['vms'] = memUse.vms
 output_data['rss'] = memUse.rss
 with open(out_file,'wb') as f:
     pickle.dump(output_data, f, protocol=2)
-print('Total time:', datetime.timedelta(seconds=time.time()-start))
+print('Total time:', datetime.timedelta(seconds=train_time))

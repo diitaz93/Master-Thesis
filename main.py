@@ -1,12 +1,15 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # ============================================================================================= #
-# main_decagon.py                                                                               #
+# main.py	                                                                                #
 # Author: Juan Sebastian Diaz Boada                                                             #
 # Creation Date: 07/05/2020                                                                     #
 # ============================================================================================= #
 """
-Runs DECAGON over a consistent real dataset with single drug side effects and protein features.
+Runs DECAGON over a consistent real dataset. A file containing the parameters of the simulation
+and the data structures is loaded. It contains the features which are used, that can be None,
+Single drug side effects, Algortithmic complaxity of the subnetworks or both.
+This scripts runs the code on CPU.
 
 Parameters
 ----------
@@ -32,7 +35,7 @@ import pandas as pd
 import psutil
 import pickle
 from decagon.deep.optimizer import DecagonOptimizer
-from decagon.deep.model import DecagonModel
+from decagon.deep.model_red import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
 
@@ -48,9 +51,7 @@ DOCK = False
 BIND = False
 if 'DSE' in words: DSE = True
 if 'BDM' in words: BDM = True
-if 'docking' in words: DOCK = True
-elif 'binding' in words: BIND = True
-d_text = DOCK*'_docking'+BIND*'_binding'
+d_text = ''
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
@@ -154,10 +155,13 @@ mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
           str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
           '_valsize_'+str(val_test_size) + noise_str
 with open(mb_file, 'rb') as f:
-    MB = pickle.load(f)
-    for key in MB.keys():
-        globals()[key]=MB[key]
-        print(key,"Imported successfully")
+    minibatch = pickle.load(f)
+# Commented until definitive minibatch is created (including time and memory)
+#with open(mb_file, 'rb') as f:
+#    MB = pickle.load(f)
+#    for key in MB.keys():
+#        globals()[key]=MB[key]
+#        print(key,"Imported successfully")
 minibatch.feat = feat
 print("New features loaded to minibatch")
 
@@ -212,10 +216,10 @@ for epoch in range(FLAGS.epochs):
             placeholders=placeholders)
         # Training step: run single weight update
         outs = sess.run([opt.opt_op, opt.cost, opt.batch_edge_type_idx], feed_dict=feed_dict)
-        if (itr+1)%1000==0:print('Iteration',itr)
+        if (itr+1)%1000==0:print('Iteration',itr,' of epoch',epoch)
         itr += 1
     # Train & validation accuracy over all train data per epoch
-    print('======================================================================================================================')
+    print('========================================================================================')
     print("Epoch", "%04d" % (epoch + 1),'finished!')
     print("Time=", "{:.5f}".format(time.time()-t))
     for r in range(num_edge_types):
@@ -255,7 +259,7 @@ memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms*1e-09,'Gb')
 print('RSS Memory:', memUse.rss*1e-09,'Gb')
 train_time=time.time()-start
-output_data['mb_time'] = mb_time
+#output_data['mb_time'] = mb_time
 output_data['train_time'] = train_time
 output_data['edge2name'] = edge2name
 output_data['drug2idx'] = drug2idx

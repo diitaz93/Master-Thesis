@@ -101,20 +101,20 @@ class DecagonModel(Model):
         for edge_type in self.edge_types:
             decoder = self.decoders[edge_type]
             for k in range(self.edge_types[edge_type]):
-                if decoder == 'bilinear':
-                    layer = BilinearDecoder(
-                    input_dim=FLAGS.hidden2, logging=self.logging,
-                    edge_type=(i, j), num_types=self.edge_types[i, j],
-                    act=lambda x: x, dropout=self.dropout)
-                    glb = layer.vars['relation_%d' % k]
-                    loc = tf.eye(FLAGS.hidden2, FLAGS.hidden2)
-                elif decoder == 'dedicom':
+                if decoder == 'dedicom':
                     layer = DEDICOMDecoder(
                     input_dim=FLAGS.hidden2, logging=self.logging,
                     edge_type=(i, j), num_types=self.edge_types[i, j],
                     act=lambda x: x, dropout=self.dropout)
                     glb = layer.vars['global_interaction']
                     loc = tf.diag(layer.vars['local_variation_%d' % k])
+                elif decoder == 'bilinear':
+                    layer = BilinearDecoder(
+                    input_dim=FLAGS.hidden2, logging=self.logging,
+                    edge_type=(i, j), num_types=self.edge_types[i, j],
+                    act=lambda x: x, dropout=self.dropout)
+                    glb = layer.vars['relation_%d' % k]
+                    loc = tf.eye(FLAGS.hidden2, FLAGS.hidden2)
                 else:
                     raise ValueError('Unknown decoder type')
 
