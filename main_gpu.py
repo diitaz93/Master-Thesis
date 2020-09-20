@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 # ============================================================================================= #
-# main_gpu.py                                                                               #
+# main_gpu.py                                                                                   #
 # Author: Juan Sebastian Diaz Boada                                                             #
 # Creation Date: 07/05/2020                                                                     #
 # ============================================================================================= #
@@ -54,7 +54,7 @@ if 'BDM' in words: BDM = True
 d_text = ''
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3'
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
@@ -157,6 +157,13 @@ mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
           '_genes_'+str(n_genes)+'_drugs_'+\
           str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
           '_valsize_'+str(val_test_size) + noise_str
+# Commented until definitive minibatch is created (including time and memory)
+#with open(mb_file, 'rb') as f:
+#    MB = pickle.load(f)
+#    for key in MB.keys():
+#        globals()[key]=MB[key]
+#        print(key,"Imported successfully")
+
 with open(mb_file, 'rb') as f:
     minibatch = pickle.load(f)
 minibatch.feat = feat
@@ -205,9 +212,9 @@ for epoch in range(FLAGS.epochs):
     t = time.time()
     itr = 0
     while not minibatch.end():
-        # Construct feed dictionary
-        feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)
-        feed_dict = minibatch.update_feed_dict(
+        # Construct feed dictionary     
+	feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)     
+	feed_dict = minibatch.update_feed_dict(
             feed_dict=feed_dict,
             dropout=FLAGS.dropout,
             placeholders=placeholders)

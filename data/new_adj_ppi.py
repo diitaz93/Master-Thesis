@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # ============================================================================================= #
-# new_adj_ppi.py                                                                               #
+# new_adj_ppi.py                                                                                #
 # Author: Juan Sebastian Diaz Boada                                                             #
 # Creation Date: 16/09/2020                                                                     #
 # ============================================================================================= #
@@ -30,6 +30,7 @@ parser = argparse.ArgumentParser(description='DS file')
 parser.add_argument('in_file',type=str, help="Input file with data structures")
 args = parser.parse_args()
 in_file = args.in_file
+# Fraction of edges to be discarded
 cut_frac = 0.25
 
 #Define function for sparse matrices of DECAGON
@@ -70,6 +71,7 @@ new_l = np.shape(new_coords)[0]
 new_ppi_adj = sp.csr_matrix((np.ones(new_l), (new_coords[:,0], new_coords[:,1])), shape=np.shape(ppi_adj))
 # SAVING
 out_file = 'ADJ_PPI_cutfrac_'+str(cut_frac)
-with open(out_file,'wb') as f:
-    pickle.dump(new_ppi_adj, f)
+print(out_file)
+#with open(out_file,'wb') as f:
+#    pickle.dump(new_ppi_adj, f)
     

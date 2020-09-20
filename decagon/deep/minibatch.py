@@ -196,6 +196,7 @@ class EdgeMinibatchIterator(object):
         """Select a random edge type and a batch of edges of the same type"""
         # 1. Select edge type assigning an index to it based on the value of self.iter
         while True:
+            #print(self.iter)
             if self.iter % 4 == 0:
                 # gene-gene relation
                 self.current_edge_type_idx = self.edge_type2idx[0, 0, 0]
