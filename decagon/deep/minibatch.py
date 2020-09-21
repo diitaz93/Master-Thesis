@@ -211,6 +211,7 @@ class EdgeMinibatchIterator(object):
                 if len(self.freebatch_edge_types) > 0:
                     self.current_edge_type_idx = np.random.choice(self.freebatch_edge_types)
                 else:
+                    # If the training instances are over for that side effect, choose PPI
                     self.current_edge_type_idx = self.edge_type2idx[0, 0, 0]
                     self.iter = 0
             # Check if there are enough train instances left to fill a batch 
