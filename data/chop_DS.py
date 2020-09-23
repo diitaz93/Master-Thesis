@@ -29,6 +29,8 @@ parser = argparse.ArgumentParser(description='DS file')
 parser.add_argument('in_file',type=str, help="Input file with data structures")
 args = parser.parse_args()
 in_file = args.in_file
+words = in_file.split('_')
+sim_type = words[2]
 # Fraction of edges to be discarded
 cut_frac = 0.25
 
@@ -38,7 +40,11 @@ with open(in_file,'rb') as f:
     for key in DS.keys():
         globals()[key]=DS[key]
         print(key,"Imported successfully")
-
+old_genes = len(gene2idx)
+old_drugs = len(drug2idx)
+old_se_combo = len(se_combo_name2idx)
+old_se_mono = len(se_mono_name2idx)
+# =================================== BDM =============================================== #
 ppi_mat = ppi_adj.todense() # High memory requirement for big matrices
 # Calculate algorithmic complexity
 bdm = BDM(ndim=2, partition=PartitionRecursive)
@@ -47,7 +53,7 @@ ppi_per.set_data(np.array(ppi_mat))
 edge_complexity = ppi_per.run()
 # Reshape to the adj matrix shape
 complexity_mat = edge_complexity.reshape(np.shape(ppi_adj))
-
+# =============================== REMOVING EDGES ======================================== #
 eps = 0.0001 # The addition of this value makes the number of nonzero to coincide
 # Elementwise multiplication
 true_cmplx = np.multiply(ppi_mat,complexity_mat+eps)
@@ -62,7 +68,7 @@ new_ppi_adj = (np.abs(true_cmplx)>threshold).astype(int)
 print('Nonzero entries before',np.count_nonzero(true_cmplx))
 print('Nonzero entries after',np.count_nonzero(new_ppi_adj))
 print('Is it symmetric?',np.array_equal(new_ppi_adj,new_ppi_adj.T))
-
+# ==================== NETWORK CONSISTENCY ============================================== # 
 # Find rows of zeros (indices)
 genes_zero = np.where(~new_ppi_adj.any(axis=1))[0]
 print('Number of zero rows/columns in ppi',len(genes_zero))
@@ -115,12 +121,19 @@ if len(genes_zero)>0:
         # Update index dictionary
         drug_dict = {key:val for key, val in drug2idx.items() if val not in drugs_zero}
         drug2idx = {drug: i for i, drug in enumerate(drug_dict.keys())}
-
+# ================================= EXPORT AND SAVING ========================================= #
 n_genes = len(gene2idx)
 n_drugs = len(drug2idx)
 n_se_combo = len(se_combo_name2idx)
 n_se_mono = len(se_mono_name2idx)
-print(n_genes,n_drugs,n_se_combo,n_se_mono)
+print('Previous number of genes: ',old_genes)
+print('New number of genes: ',n_genes)
+print('Previous number of drugs: ',old_drugs)
+print('New number of drugs: ',n_drugs)
+print('Previous number of joint side effects: ',old_se_combo)
+print('New number of joint side effects: ',n_se_combo)
+print('Previous number of single side effects: ',old_se_mono)
+print('New number of single sige effects: ',n_se_mono)
 
 data = {}
 # Dictionaries
@@ -138,7 +151,6 @@ data['ppi_adj'] = new_ppi_adj
 data['ppi_degrees'] = new_ppi_degrees
 # DSE
 data['drug_feat'] = new_drug_feat
-        
 # SAVING
 out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
         '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
