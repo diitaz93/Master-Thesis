@@ -71,13 +71,13 @@ print('Is it symmetric?',np.array_equal(new_ppi_adj,new_ppi_adj.T))
 # ==================== NETWORK CONSISTENCY ============================================== # 
 # Find rows of zeros (indices)
 genes_zero = np.where(~new_ppi_adj.any(axis=1))[0]
-print('Number of zero rows/columns in ppi',len(genes_zero))
+print('Number of zero rows/columns in PPI matrix: ',len(genes_zero))
 # If there are
 if len(genes_zero)>0:
     #### PPI ####
     # Delete those rows and columns
     new_ppi_adj = np.delete(np.delete(new_ppi_adj,genes_zero,axis=1),genes_zero,axis=0)
-    print('New shape ppi',np.shape(new_ppi_adj))
+    print('New shape PPI matrix: ',np.shape(new_ppi_adj))
      # Update index dictionary
     gene_dict = {key:val for key, val in gene2idx.items() if val not in genes_zero}
     gene2idx = {gene:i for i, gene in enumerate(gene_dict.keys())}
@@ -87,11 +87,11 @@ if len(genes_zero)>0:
     # Deletes the corresponding rows in DTI
     new_dti_adj = dti_adj.todense()
     new_dti_adj = np.delete(new_dti_adj,genes_zero,axis=0)
-    print('New shape of DTI',np.shape(new_dti_adj))
+    print('New shape of DTI matrix: ',np.shape(new_dti_adj))
     #### DRUGS ####
     # Finds drugs that became disconnected from network (indices)
     drugs_zero = np.where(~new_dti_adj.any(axis=0))[1]
-    print('Number of disconnected drugs',len(drugs_zero))
+    print('Number of disconnected drugs: ',len(drugs_zero))
     if len(drugs_zero)>0:
         # Remove drugs from DTI matrix
         new_dti_adj = np.delete(new_dti_adj,drugs_zero,axis=1)
@@ -100,7 +100,7 @@ if len(genes_zero)>0:
         new_drug_feat = np.delete(new_drug_feat,drugs_zero,axis=0)
         # Find drug side effects that have no drug
         mono_zero = np.where(~new_drug_feat.any(axis=1))[1]
-        print('Number of side effects without drug',len(mono_zero))
+        print('Number of side effects without drug: ',len(mono_zero))
         if len(mono_zero)>0:
             # Remove them from drug feature matrix
             new_drug_feat = np.delete(new_drug_feat,mono_zero,axis=1)
@@ -121,6 +121,9 @@ if len(genes_zero)>0:
         # Update index dictionary
         drug_dict = {key:val for key, val in drug2idx.items() if val not in drugs_zero}
         drug2idx = {drug: i for i, drug in enumerate(drug_dict.keys())}
+        print('New size of DDI matrices: ',np.shape(new_ddi_adj_list[0]))
+else:
+    print('No further modifications to the matrices are needed')
 # ================================= EXPORT AND SAVING ========================================= #
 n_genes = len(gene2idx)
 n_drugs = len(drug2idx)
@@ -151,6 +154,8 @@ data['ppi_adj'] = new_ppi_adj
 data['ppi_degrees'] = new_ppi_degrees
 # DSE
 data['drug_feat'] = new_drug_feat
+# BDM
+data['ppi_edge_bdm'] = edge_complexity
 # SAVING
 out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
         '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
