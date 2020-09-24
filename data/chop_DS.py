@@ -87,7 +87,6 @@ if len(genes_zero)>0:
     # Deletes the corresponding rows in DTI
     new_dti_adj = dti_adj.todense()
     new_dti_adj = np.delete(new_dti_adj,genes_zero,axis=0)
-    print('New shape of DTI matrix: ',np.shape(new_dti_adj))
     #### DRUGS ####
     # Finds drugs that became disconnected from network (indices)
     drugs_zero = np.where(~new_dti_adj.any(axis=0))[1]
@@ -121,6 +120,7 @@ if len(genes_zero)>0:
         # Update index dictionary
         drug_dict = {key:val for key, val in drug2idx.items() if val not in drugs_zero}
         drug2idx = {drug: i for i, drug in enumerate(drug_dict.keys())}
+        print('New shape of DTI matrix: ',np.shape(new_dti_adj))
         print('New size of DDI matrices: ',np.shape(new_ddi_adj_list[0]))
 else:
     print('No further modifications to the matrices are needed')
