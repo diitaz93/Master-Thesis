@@ -21,6 +21,9 @@ MINIBATCH*
 results_training/
 data/data_structures/*
 
+# Results
+*.png
+
 # Open office
 *.ods
 

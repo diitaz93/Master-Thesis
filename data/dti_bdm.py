@@ -39,6 +39,7 @@ print('Input data loaded')
 jobs = 8
 usrnm = getuser()
 bdm = BDM(ndim=2, partition=PartitionRecursive)
+part = 'PartitionRecursive'
 # ============================================================================================= #
 # CALCULATION
 # Node perturbation
@@ -71,6 +72,7 @@ output_data['vms_dti'] = memUse.vms
 output_data['rss_dti'] = memUse.rss
 output_data['time_dti'] = total_time
 output_data['jobs_dti'] = jobs
+output_data['partition_type'] = part
 path = os.getcwd()
 words = input_file.split('_')
 output_file = path + '/data_structures/BDM/DTI_BDM_' + words[2] + '_genes_' + str(genes) +\

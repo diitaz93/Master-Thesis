@@ -40,6 +40,7 @@ print('Input data loaded')
 jobs = 48
 usrnm = getuser()
 bdm = BDM(ndim=2, partition=PartitionRecursive)
+part = 'PartitionRecursive'
 # ============================================================================================= #
 # CALCULATION
 nodebdm_ddi_list = []
@@ -74,6 +75,7 @@ output_data['vms_ddi'] = memUse.vms
 output_data['rss_ddi'] = memUse.rss
 output_data['time_ddi'] = total_time
 output_data['jobs_ddi'] = jobs
+output_data['partition_type'] = part
 path = os.getcwd()
 words = input_file.split('_')
 output_file = path + '/data_structures/BDM/DDI_BDM_' + words[2] + '_se_' + str(total) +\
