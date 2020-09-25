@@ -70,7 +70,7 @@ print('Nonzero entries after',np.count_nonzero(new_ppi_adj))
 print('Is it symmetric?',np.array_equal(new_ppi_adj,new_ppi_adj.T))
 # ==================== NETWORK CONSISTENCY ============================================== # 
 # Find rows of zeros (indices)
-genes_zero = np.where(~new_ppi_adj.any(axis=1))[0]
+genes_zero = np.asarray(~new_ppi_adj.any(axis=1)).nonzero()[0]
 print('Number of zero rows/columns in PPI matrix: ',len(genes_zero))
 # If there are
 if len(genes_zero)>0:
@@ -89,7 +89,7 @@ if len(genes_zero)>0:
     new_dti_adj = np.delete(new_dti_adj,genes_zero,axis=0)
     #### DRUGS ####
     # Finds drugs that became disconnected from network (indices)
-    drugs_zero = np.where(~new_dti_adj.any(axis=0))[1]
+    drugs_zero = np.asarray(~new_dti_adj.any(axis=1)).nonzero()[0]
     print('Number of disconnected drugs: ',len(drugs_zero))
     if len(drugs_zero)>0:
         # Remove drugs from DTI matrix
@@ -98,7 +98,7 @@ if len(genes_zero)>0:
         new_drug_feat = drug_feat.todense()
         new_drug_feat = np.delete(new_drug_feat,drugs_zero,axis=0)
         # Find drug side effects that have no drug
-        mono_zero = np.where(~new_drug_feat.any(axis=1))[1]
+        mono_zero = np.asarray(~new_drug_feat.any(axis=1)).nonzero()[0]
         print('Number of side effects without drug: ',len(mono_zero))
         if len(mono_zero)>0:
             # Remove them from drug feature matrix
