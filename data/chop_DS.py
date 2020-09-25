@@ -124,6 +124,9 @@ if len(genes_zero)>0:
         print('New size of DDI matrices: ',np.shape(new_ddi_adj_list[0]))
 else:
     print('No further modifications to the matrices are needed')
+new_drug_feat = sp.csr_matrix(new_drug_feat)
+new_ppi_adj = sp.csr_matrix(new_ppi_adj)
+new_dti_adj = sp.csr_matrix(new_dti_adj)
 # ================================= EXPORT AND SAVING ========================================= #
 n_genes = len(gene2idx)
 n_drugs = len(drug2idx)
@@ -162,5 +165,5 @@ out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
         '_se_' + str(n_se_combo)
 print(out_file)
 with open(out_file,'wb') as f:
-    pickle.dump(new_ppi_adj, f)
+    pickle.dump(data, f)
 
