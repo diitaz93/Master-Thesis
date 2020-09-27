@@ -53,6 +53,15 @@ ppi_per.set_data(np.array(ppi_mat))
 edge_complexity = ppi_per.run()
 # Reshape to the adj matrix shape
 complexity_mat = edge_complexity.reshape(np.shape(ppi_adj))
+#============================= PRELIMINARY SAVING OF BDM ================================ #
+out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
+        '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
+        '_se_' + str(n_se_combo)
+print(out_file)
+data = {}
+data['ppi_edge_bdm'] = edge_complexity
+with open(out_file,'wb') as f:
+    pickle.dump(data, f)
 # =============================== REMOVING EDGES ======================================== #
 eps = 0.0001 # The addition of this value makes the number of nonzero to coincide
 # Elementwise multiplication
@@ -104,7 +113,7 @@ if len(genes_zero)>0:
             # Remove them from drug feature matrix
             new_drug_feat = np.delete(new_drug_feat,mono_zero,axis=1)
             # Update index dictionary
-            mono_dict = {key:val for key,val in se_mono_name2idx.keys() if val not in mono_zero}
+            mono_dict = {key:val for key,val in se_mono_name2idx.items() if val not in mono_zero}
             se_mono_name2idx = {se: i for i, se in enumerate(mono_dict.keys())}
         #### DDI ####
         # Remove drugs from adjacency matrices
@@ -141,7 +150,6 @@ print('New number of joint side effects: ',n_se_combo)
 print('Previous number of single side effects: ',old_se_mono)
 print('New number of single sige effects: ',n_se_mono)
 
-data = {}
 # Dictionaries
 data['gene2idx'] = gene2idx
 data['drug2idx'] = drug2idx
@@ -157,13 +165,8 @@ data['ppi_adj'] = new_ppi_adj
 data['ppi_degrees'] = new_ppi_degrees
 # DSE
 data['drug_feat'] = new_drug_feat
-# BDM
-data['ppi_edge_bdm'] = edge_complexity
+
 # SAVING
-out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
-        '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
-        '_se_' + str(n_se_combo)
-print(out_file)
 with open(out_file,'wb') as f:
     pickle.dump(data, f)
 
