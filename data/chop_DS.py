@@ -54,14 +54,10 @@ edge_complexity = ppi_per.run()
 # Reshape to the adj matrix shape
 complexity_mat = edge_complexity.reshape(np.shape(ppi_adj))
 #============================= PRELIMINARY SAVING OF BDM ================================ #
-out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
-        '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
-        '_se_' + str(n_se_combo)
-print(out_file)
-data = {}
-data['ppi_edge_bdm'] = edge_complexity
-with open(out_file,'wb') as f:
-    pickle.dump(data, f)
+out_file_bdm = 'data_structures/BDM/EDGES_PPI_real_genes_' + str(old_genes)
+print(out_file_bdm)
+with open(out_file_bdm,'wb') as f:
+    pickle.dump(edge_complexity, f)
 # =============================== REMOVING EDGES ======================================== #
 eps = 0.0001 # The addition of this value makes the number of nonzero to coincide
 # Elementwise multiplication
@@ -151,6 +147,7 @@ print('Previous number of single side effects: ',old_se_mono)
 print('New number of single sige effects: ',n_se_mono)
 
 # Dictionaries
+data = {}
 data['gene2idx'] = gene2idx
 data['drug2idx'] = drug2idx
 data['se_mono_name2idx'] = se_mono_name2idx
@@ -167,6 +164,10 @@ data['ppi_degrees'] = new_ppi_degrees
 data['drug_feat'] = new_drug_feat
 
 # SAVING
+out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
+        '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
+        '_se_' + str(n_se_combo)
+print(out_file)
 with open(out_file,'wb') as f:
     pickle.dump(data, f)
 

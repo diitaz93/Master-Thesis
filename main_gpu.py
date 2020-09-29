@@ -35,7 +35,7 @@ import pandas as pd
 import psutil
 import pickle
 from decagon.deep.optimizer import DecagonOptimizer
-from decagon.deep.model_red import DecagonModel
+from decagon.deep.model import DecagonModel
 from decagon.deep.minibatch import EdgeMinibatchIterator
 from decagon.utility import rank_metrics, preprocessing
 
@@ -54,7 +54,7 @@ if 'BDM' in words: BDM = True
 d_text = ''
 # Train on GPU
 os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
@@ -219,7 +219,7 @@ for epoch in range(FLAGS.epochs):
             dropout=FLAGS.dropout,
             placeholders=placeholders)
         # Training step: run single weight update
-        outs = sess.run([opt.opt_op, opt.cost, opt.batch_edge_type_idx], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op], feed_dict=feed_dict)
         if (itr+1)%1000==0:print('Iteration',itr,' of epoch',epoch)
         itr += 1
     # Train & validation accuracy over all train data per epoch
