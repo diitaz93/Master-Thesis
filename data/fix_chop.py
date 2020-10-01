@@ -31,7 +31,15 @@ in_file = args.in_file
 words = in_file.split('_')
 sim_type = words[2]
 # Fraction of edges to be discarded
-cut_frac = 0.25
+cut_frac = 0.01
+# DECAGON sparse matrix function
+def sparse_to_tuple(sparse_mx):
+    if not sp.isspmatrix_coo(sparse_mx):
+        sparse_mx = sparse_mx.tocoo()
+    coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
+    values = sparse_mx.data
+    shape = sparse_mx.shape
+    return coords, values, shape
 
 # Import original Data structures
 with open(in_file,'rb') as f:
@@ -49,6 +57,8 @@ out_file_bdm = 'data_structures/BDM/EDGES_PPI_real_genes_19081'
 print(out_file_bdm)
 with open(out_file_bdm,'rb') as f:
     edge_complexity = pickle.load(f)
+complexity_mat = edge_complexity.reshape(np.shape(ppi_adj))
+print('Is it symmetric?',np.array_equal(complexity_mat,complexity_mat.T))
 # =============================== REMOVING EDGES ======================================== #
 coords,_,_ = sparse_to_tuple(ppi_adj)
 # Take the upper triangular coordinates
