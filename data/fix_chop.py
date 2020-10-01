@@ -6,7 +6,9 @@
 # Creation Date: 22/09/2020                                                                     #
 # ============================================================================================= #
 """
-Fix!
+Takes the data structures of a network and loads the BDM of the PPI matrix (already
+pre-calculated). Discards a given fraction of the edges and updates the DS file with a reduced 
+version of the PPI and DTI matrices.
 
 Parameters
 ----------
@@ -17,11 +19,6 @@ in_file : string
 import numpy as np
 import scipy.sparse as sp
 import pickle
-from pybdm import BDM
-from pybdm.utils import decompose_dataset
-from pybdm.partitions import PartitionIgnore
-from pybdm.partitions import PartitionRecursive
-from algorithms import PerturbationExperiment, NodePerturbationExperiment
 import argparse
 
 parser = argparse.ArgumentParser(description='DS file')
@@ -48,9 +45,6 @@ with open(in_file,'rb') as f:
         globals()[key]=DS[key]
         print(key,"Imported successfully")
 old_genes = len(gene2idx)
-old_drugs = len(drug2idx)
-old_se_combo = len(se_combo_name2idx)
-old_se_mono = len(se_mono_name2idx)
 # =================================== BDM =============================================== #
 # Load algorithmic complexity vector
 out_file_bdm = 'data_structures/BDM/EDGES_PPI_real_genes_19081'
@@ -58,7 +52,6 @@ print(out_file_bdm)
 with open(out_file_bdm,'rb') as f:
     edge_complexity = pickle.load(f)
 complexity_mat = edge_complexity.reshape(np.shape(ppi_adj))
-print('Is it symmetric?',np.array_equal(complexity_mat,complexity_mat.T))
 # =============================== REMOVING EDGES ======================================== #
 coords,_,_ = sparse_to_tuple(ppi_adj)
 # Take the upper triangular coordinates
@@ -116,12 +109,6 @@ n_se_combo = len(se_combo_name2idx)
 n_se_mono = len(se_mono_name2idx)
 print('Previous number of genes: ',old_genes)
 print('New number of genes: ',n_genes)
-print('Previous number of drugs: ',old_drugs)
-print('New number of drugs: ',n_drugs)
-print('Previous number of joint side effects: ',old_se_combo)
-print('New number of joint side effects: ',n_se_combo)
-print('Previous number of single side effects: ',old_se_mono)
-print('New number of single sige effects: ',n_se_mono)
 
 # Dictionaries
 data = {}
