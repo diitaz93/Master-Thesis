@@ -104,44 +104,9 @@ if len(genes_zero)>0:
     # Deletes the corresponding rows in DTI
     new_dti_adj = dti_adj.todense()
     new_dti_adj = np.delete(new_dti_adj,genes_zero,axis=0)
-    #### DRUGS ####
-    # Finds drugs that became disconnected from network (indices)
-    drugs_zero = np.asarray(~new_dti_adj.any(axis=0)).squeeze().nonzero()[0]
-    print('Number of disconnected drugs: ',len(drugs_zero))
-    # Remove drugs from DTI matrix
-    new_dti_adj = np.delete(new_dti_adj,drugs_zero,axis=1)
-    # Remove drugs from drug feature matrix
-    new_drug_feat = drug_feat.todense()
-    new_drug_feat = np.delete(new_drug_feat,drugs_zero,axis=0)
-    # Find drug side effects that have no drug
-    mono_zero = np.asarray(~new_drug_feat.any(axis=0)).squeeze().nonzero()[0]
-    print('Number of side effects without drug: ',len(mono_zero))
-    if len(mono_zero)>0:
-        # Remove them from drug feature matrix
-        new_drug_feat = np.delete(new_drug_feat,mono_zero,axis=1)
-        # Update index dictionary
-        mono_dict = {key:val for key,val in se_mono_name2idx.items() if val not in mono_zero}
-        se_mono_name2idx = {se: i for i, se in enumerate(mono_dict.keys())}
-    print('New shape of drug features matrix: ',np.shape(new_drug_feat))
-    #### DDI ####
-    # Remove drugs from adjacency matrices
-    new_ddi_degrees_list = []
-    new_ddi_adj_list = []
-    for i in ddi_adj_list:
-        # Remove drugs from DDI matrices
-        ddi_mat = np.delete(np.delete(i.todense(),drugs_zero,axis=0),\
-                                    drugs_zero,axis=1)
-        new_ddi_adj_list.append(sp.csr_matrix(ddi_mat))
-        # Update degree list
-        new_ddi_degrees_list.append(np.array(ddi_mat.sum(axis=0)).squeeze())
-    # Update index dictionary
-    drug_dict = {key:val for key, val in drug2idx.items() if val not in drugs_zero}
-    drug2idx = {drug: i for i, drug in enumerate(drug_dict.keys())}
     print('New shape of DTI matrix: ',np.shape(new_dti_adj))
-    print('New shape of DDI matrices: ',np.shape(new_ddi_adj_list[0]))
 else:
     print('No further modifications to the matrices are needed')
-new_drug_feat = sp.csr_matrix(new_drug_feat)
 new_ppi_adj = sp.csr_matrix(new_ppi_adj)
 new_dti_adj = sp.csr_matrix(new_dti_adj)
 # ================================= EXPORT AND SAVING ========================================= #
@@ -165,15 +130,15 @@ data['drug2idx'] = drug2idx
 data['se_mono_name2idx'] = se_mono_name2idx
 data['se_combo_name2idx'] = se_combo_name2idx
 # DDI
-data['ddi_adj_list'] = new_ddi_adj_list
-data['ddi_degrees_list'] = new_ddi_degrees_list
+data['ddi_adj_list'] = ddi_adj_list
+data['ddi_degrees_list'] = ddi_degrees_list
 # DTI
 data['dti_adj'] = new_dti_adj
 # PPI
 data['ppi_adj'] = new_ppi_adj
 data['ppi_degrees'] = new_ppi_degrees
 # DSE
-data['drug_feat'] = new_drug_feat
+data['drug_feat'] = drug_feat
 
 # SAVING
 out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
