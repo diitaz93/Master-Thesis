@@ -7,24 +7,30 @@
 # ============================================================================================= #
 """
 Generates a random dataset with the structure of the real data used to train DECAGON. The 
-parameters: number of genes, number of drugs, number of joint side effects, number of single 
-side effects and number of protein features have to be set manually. The code generates 
+parameters: number of genes, number of drugs, number of single side effects and number of joint 
+side effects have to be entered as parameter of the script in that order. The code generates 
 adjacency matrices of similar density to the ones generated with real data, and enumeration 
 dictionaries. Finally, it exports them in a `pickle` readable format. Thresholds of random 
 matrices have been tunned heuristically.
 
 """
 # ============================================================================================= #
+import argparse
 import numpy as np
 import scipy.sparse as sp
 import pickle
 from joblib import Parallel, delayed
 # Parameters
-n_genes = 16269
-n_drugs = 630
-n_se_combo = 6
-n_se_mono = 9688
-n_pf = 5
+parser = argparse.ArgumentParser(description='Creation of toy dataset')
+parser.add_argument('n_genes', nargs='?',default =19081,type=int, help="Number of genes")
+parser.add_argument('n_drugs', nargs='?',default =639,type=int, help="Number of drugs")
+parser.add_argument('mono', nargs='?',default =9702,type=int, help="Number of mono side effects")
+parser.add_argument('combo', nargs='?',default =964,type=int, help="Number of poly side effects")
+args = parser.parse_args()
+n_genes = args.n_genes
+n_drugs = args.n_drugs
+n_se_combo = args.combo
+n_se_mono = args.mono
 # ============================================================================================= #
 # DATA GENERATION
 # Adjacency matrix for PPI network
@@ -45,8 +51,6 @@ ddi_adj_list = Parallel(n_jobs=8)\
 ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
 # Drug feature matrix
 drug_feat = sp.csr_matrix((10 * np.random.randn(n_drugs, n_se_mono) > 19).astype(int))
-# Protein feature matrix
-prot_feat = sp.csr_matrix((10 * np.random.randn(n_genes, n_pf) > 0.5).astype(int))
 # ============================================================================================= #
 # CONTROL PRINTING
 # Interactions (edges)
@@ -63,7 +67,6 @@ print('The DDI adj matrix is filled in average in a',
                     ((np.sum(x)/(n_drugs*n_drugs)*100 for x in ddi_adj_list),float)),2),'%')
 print('Number of DSE interactions:', np.sum(drug_feat))
 print('The DSE adj matrix is filled in a',round(np.sum(drug_feat)/(n_drugs*n_se_mono)*100,2),'%')
-print('The PF adj matrix is filled in a',round(np.sum(prot_feat)/(n_genes*n_pf)*100,2),'%')
 print('\n')
 # Drugs and genes (nodes)
 print('Drugs and genes (nodes)')
@@ -75,8 +78,6 @@ print('Side effects')
 print('Number of joint side effects:', n_se_combo)
 print('Number of single side effects:', n_se_mono)
 print('\n')
-# Protein side effects
-print('Number of protein features:',n_pf)
 # ============================================================================================= #
 # SAVING DATA STRUCTURES
 data = {}
@@ -95,10 +96,9 @@ data['ppi_adj'] = ppi_adj
 data['ppi_degrees'] = ppi_degrees
 # DSE
 data['drug_feat'] = sp.csr_matrix((10 * np.random.randn(n_drugs, n_se_mono) > 15).astype(int))
-# PF
-data['prot_feat'] = sp.csr_matrix((10 * np.random.randn(n_genes, n_pf) > 15).astype(int))
 # Pickle saving
-filename = './data_structures/DS/DS_toy_DSE_' + str(n_se_mono) + '_PF_'+str(n_pf) +\
+filename = './data_structures/DS/DS_toy_DSE_' + str(n_se_mono) +\
 '_genes_'+str(n_genes) + '_drugs_' + str(n_drugs) + '_se_' + str(n_se_combo)
+print(filename)
 with open(filename, 'wb') as f:
     pickle.dump(data, f, protocol=3)
