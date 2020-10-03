@@ -10,7 +10,6 @@ data/old_files/*
 data/affinities
 *.xlsx
 # Data structures
-DS_*
 DECAGON_*
 TRAIN_*_
 PPI_BDM_*
