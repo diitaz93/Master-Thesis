@@ -11,45 +11,53 @@ fraction of the edges and updates the DS file with a reduced version of the PPI 
 
 Parameters
 ----------
-in_file : string
+in_file : string 
     (Relative) path to the file of data structures.
+cut_frac : float, optional, flagged
+    Fraction of the edges that will be discarded (between 0 and 1). Defaults to 0.25.
 """
 # ============================================================================================= #
 import numpy as np
 import scipy.sparse as sp
 import pickle
+import argparse
+import sys
+sys.path.append("..") # Adds higher directory to python modules path.
+from decagon.utility.preprocessing import sparse_to_tuple
 from pybdm import BDM
 from pybdm.utils import decompose_dataset
-from pybdm.partitions import PartitionIgnore
 from pybdm.partitions import PartitionRecursive
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
-import argparse
 
-parser = argparse.ArgumentParser(description='DS file')
-parser.add_argument('in_file',type=str, help="Input file with data structures")
+parser = argparse.ArgumentParser(description='Two possible arguments, only second one is optional.')
+parser.add_argument('in_file',type=str, help="Input DS file.")
+parser.add_argument('--cut_frac', type=float, default=0.25,\
+                    help="Fraction of edges to be discarded")
 args = parser.parse_args()
 in_file = args.in_file
 words = in_file.split('_')
 sim_type = words[2]
 # Fraction of edges to be discarded
-cut_frac = 0.25
+cut_frac = args.cut_frac
 
 # DECAGON sparse matrix function
-def sparse_to_tuple(sparse_mx):
-    if not sp.isspmatrix_coo(sparse_mx):
-        sparse_mx = sparse_mx.tocoo()
-    coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
-    values = sparse_mx.data
-    shape = sparse_mx.shape
-    return coords, values, shape
+#def sparse_to_tuple(sparse_mx):
+#    if not sp.isspmatrix_coo(sparse_mx):
+#        sparse_mx = sparse_mx.tocoo()
+#    coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
+#    values = sparse_mx.data
+#    shape = sparse_mx.shape
+#    return coords, values, shape
 
 # Import original Data structures
+print('\n==== IMPORTED VARIABLES ====')
 with open(in_file,'rb') as f:
     DS = pickle.load(f)
     for key in DS.keys():
         globals()[key]=DS[key]
         print(key,"Imported successfully")
 old_genes = len(gene2idx)
+print('\n')
 # =================================== BDM =============================================== #
 ppi_mat = ppi_adj.todense() # High memory requirement for big matrices
 # Calculate algorithmic complexity
@@ -61,7 +69,7 @@ edge_complexity = ppi_per.run()
 complexity_mat = edge_complexity.reshape(np.shape(ppi_adj))
 #============================= PRELIMINARY SAVING OF BDM ================================ #
 out_file_bdm = 'data_structures/BDM/EDGES_PPI_'+sim_type+'_genes_' + str(old_genes)
-print(out_file_bdm)
+print('Output BDM file: ',out_file_bdm,'\n')
 with open(out_file_bdm,'wb') as f:
     pickle.dump(edge_complexity, f)
 # =============================== REMOVING EDGES ======================================== #
@@ -86,9 +94,9 @@ col_ind = np.concatenate((upper_coords[idx,1],upper_coords[idx,0]),axis=0)
 # Form the new adjacency matrix
 new_ppi_adj = sp.csr_matrix((np.ones(2*threshold), (row_ind, col_ind)),\
                             shape=np.shape(ppi_adj),dtype=int)
+print('==== CHANGES MADE ====')
 print('Nonzero entries before',len(coords))
 print('Nonzero entries after',new_ppi_adj.count_nonzero())
-print('Is it symmetric?',np.array_equal(new_ppi_adj.todense(),new_ppi_adj.todense().T))
 # ==================== NETWORK CONSISTENCY ============================================== # 
 # Find rows of zeros (indices)
 new_ppi_adj = new_ppi_adj.todense()
@@ -121,6 +129,7 @@ n_se_combo = len(se_combo_name2idx)
 n_se_mono = len(se_mono_name2idx)
 print('Previous number of genes: ',old_genes)
 print('New number of genes: ',n_genes)
+print('\n')
 
 # Dictionaries
 data = {}
@@ -143,7 +152,7 @@ data['drug_feat'] = drug_feat
 out_file = 'data_structures/CHOP/DS_' + sim_type + '_cutfrac_'+str(cut_frac) +\
         '_DSE_' + str(n_se_mono) + '_genes_' +str(n_genes) + '_drugs_' + str(n_drugs) +\
         '_se_' + str(n_se_combo)
-print(out_file)
+print('Output file: ',out_file,'\n')
 with open(out_file,'wb') as f:
     pickle.dump(data, f)
 
