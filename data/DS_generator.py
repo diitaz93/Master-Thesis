@@ -6,11 +6,12 @@
 # Creation Date: 03/10/2020                                                                     #
 # ============================================================================================= #
 """
-Imports original DECAGON database and generates the data structures needed to start DECAGON.
-First the original dataset is filtered so it has no unlinked nodes creating a consistent network.
-Then a fraction of the dataset is chosen, selecting a fixed number of polypharmacy side effects
-given by parameter N (defaults to 964). With the reduced network, the adjacency matrices and the
-node enumeration dictionaries are created and exported as a pickle readable file.
+Imports original DECAGON database and translates it into adjaceny matrices and enumeration 
+dictionaries. First the original dataset is filtered so it has no unlinked nodes creating a 
+consistent network. Then a fraction of the dataset is chosen, selecting a fixed number of 
+polypharmacy side effects given by parameter N (defaults to 964). With the reduced network, 
+the adjacency matrices and the node enumeration dictionaries are created and exported as a 
+pickle python3 readable file.
 
 Parameters
 ----------
@@ -67,7 +68,7 @@ new_drugs_ddi = len(pd.unique(DDI[['STITCH 1','STITCH 2']].values.ravel()))
 new_drugs_dse = len(pd.unique(DSE['STITCH'].values))
 new_se_combo = len(pd.unique(DDI['Polypharmacy Side Effect'].values))
 new_se_mono = len(pd.unique(DSE['Side Effect Name']))
-# SELECT ONLY ENTRIES FROM DTI DATABASE THAT ARE PRESENT IN PREVIOUS REDUCED DATABASES
+# SELECT ONLY ENTRIES FROM DTI DATABASE THAT ARE PRESENT IN PREVIOUSLY REDUCED DATABASES
 orig_genes_dti = len(pd.unique(DTI['Gene'].values))
 orig_drugs_dti = len(pd.unique(DTI['STITCH'].values))
 DTI = DTI[np.logical_and(DTI['STITCH'].isin(DDI_drugs),DTI['Gene'].isin(PPI_genes))]
@@ -105,7 +106,7 @@ dti_genes = len(DTI_genes)
 # PPI
 PPI = PPI[np.logical_or(PPI['Gene 1'].isin(DTI_genes),
                        PPI['Gene 2'].isin(DTI_genes))].reset_index(drop=True)
-PPI_genes = pd.unique(PPI[['Gene 1','Gene 2']].values.ravel()) # Unique genes is PPI
+PPI_genes = pd.unique(PPI[['Gene 1','Gene 2']].values.ravel()) # Unique genes in PPI
 gene2idx = {gene: i for i, gene in enumerate(PPI_genes)}
 n_genes = len(PPI_genes)
 # ============================================================================================= #
@@ -205,6 +206,7 @@ data['drug_feat'] = drug_feat
 # Exporting
 filename = './data_structures/DS/DS_real_DSE_' + str(n_semono) +\
            '_genes_' + str(n_genes) + '_drugs_' + str(n_drugs) + '_se_' + str(N)
+print(filename)
 with open(filename, 'wb') as f:
     pickle.dump(data, f, protocol=3)
 
