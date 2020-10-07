@@ -25,6 +25,7 @@ import os
 import sys
 import psutil
 import pickle
+import warnings
 from pybdm import BDM
 from pybdm.partitions import PartitionRecursive
 from algorithms import PerturbationExperiment, NodePerturbationExperiment
@@ -34,10 +35,11 @@ input_file = str(sys.argv[1])
 start = time.time() 
 pid = os.getpid()
 ps= psutil.Process(pid)
+warnings.filterwarnings("ignore")
 with open(input_file, 'rb') as f:
     ddi_adj_list = pickle.load(f)['ddi_adj_list']
-print('Input data loaded')
-jobs = 48
+print('\nInput data loaded\n')
+jobs = 32
 usrnm = getuser()
 bdm = BDM(ndim=2, partition=PartitionRecursive)
 part = 'PartitionRecursive'
@@ -56,12 +58,11 @@ for i in ddi_adj_list:
     ddi_edgeper.set_data(np.array(i.todense()))
     print('set data')
     nodebdm_ddi_list.append(ddi_nodeper.run())
-    add_edgebdm_ddi_list.append(ddi_edgeper.run_adding_edges())
     rem_edgebdm_ddi_list.append(ddi_edgeper.run_removing_edges())
     prog = count*100/total
     count += 1
     print(prog,'% completed')
-print('Node and Edge BDM for DDI calculated')
+print('Node and Edge BDM for DDI calculated\n')
 # ============================================================================================= #
 # EXPORTING
 drugs = np.shape(ddi_adj_list[0])[0]
@@ -69,7 +70,6 @@ memUse = ps.memory_info()
 total_time=time.time()-start
 output_data = {}
 output_data['nodebdm_ddi_list'] = nodebdm_ddi_list
-output_data['add_edgebdm_ddi_list'] = add_edgebdm_ddi_list
 output_data['rem_edgebdm_ddi_list'] = rem_edgebdm_ddi_list
 output_data['vms_ddi'] = memUse.vms
 output_data['rss_ddi'] = memUse.rss
@@ -82,4 +82,4 @@ output_file = path + '/data_structures/BDM/DDI_BDM_' + words[2] + '_se_' + str(t
               '_drugs_' + str(drugs) + '_' + usrnm + str(jobs)
 with open(output_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
-print('Output data exported')
+print('Output data exported in ', output_file,'\n')

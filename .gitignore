@@ -8,6 +8,7 @@ data/original_data/*
 data/amir_docking_data/*
 data/old_files/*
 data/affinities
+data/mippie
 *.xlsx
 # Data structures
 DECAGON_*
