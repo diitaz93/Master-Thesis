@@ -22,39 +22,25 @@ class DecagonOptimizer(object):
         self.batch_size = batch_size
 
         self.inputs = placeholders['batch']
+        self.neg_inputs = placeholders['neg_batch']
         self.batch_edge_type_idx = placeholders['batch_edge_type_idx']
         self.batch_row_edge_type = placeholders['batch_row_edge_type']
         self.batch_col_edge_type = placeholders['batch_col_edge_type']
 
         self.row_inputs = tf.squeeze(gather_cols(self.inputs, [0]))
         self.col_inputs = tf.squeeze(gather_cols(self.inputs, [1]))
+        self.neg_rows = tf.squeeze(gather_cols(self.neg_inputs, [0]))
+        self.neg_cols = tf.squeeze(gather_cols(self.neg_inputs, [1]))
         # Indices for selecting the correct (drug or gene) embeddings in the predict functions
         obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))] #[n_genes,n_drugs]
         self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])#[0,n_genes]
         self.obj_type_lookup_end = tf.cumsum(obj_type_n)#[n_genes,n_drugs+n_genes]
         
-        # Sample negative interactions
-        # sample row indices (labels) per training example with a probability proportional to degree
-        labels = tf.reshape(tf.cast(self.row_inputs, dtype=tf.int64), [self.batch_size, 1])#rowsinp
-        neg_samples_list = []
-        for i, j in self.edge_types:
-            for k in range(self.edge_types[i,j]):
-                neg_samples, _, _ = tf.nn.fixed_unigram_candidate_sampler(
-                    true_classes=labels,
-                    num_true=1,
-                    num_sampled=self.batch_size, #length of output
-                    unique=False,
-                    range_max=len(self.degrees[i][k]), # number of nodes, range for sampling
-                    distortion=0.75,
-                    unigrams=self.degrees[i][k].tolist()) # higher degree more probability
-                neg_samples_list.append(neg_samples)
-        self.neg_samples = tf.gather(neg_samples_list, self.batch_edge_type_idx)
-        
         self.preds = self.batch_predict(self.row_inputs, self.col_inputs)
         self.outputs = tf.diag_part(self.preds)
         self.outputs = tf.reshape(self.outputs, [-1])
 
-        self.neg_preds = self.batch_predict(self.neg_samples, self.col_inputs)
+        self.neg_preds = self.batch_predict(self.neg_rows, self.neg_cols)
         self.neg_outputs = tf.diag_part(self.neg_preds)
         self.neg_outputs = tf.reshape(self.neg_outputs, [-1])
 
@@ -121,19 +107,10 @@ class DecagonOptimizer(object):
         self.predictions = tf.matmul(product3, tf.transpose(col_embeds))
 
     def _build(self):
-        #self.cost = self._hinge_loss(self.outputs, self.neg_outputs)
         self.cost = self._xent_loss(self.outputs, self.neg_outputs)
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         #  TO SOLVE (by SNAPS): This function makes the dense tensor
         self.opt_op = self.optimizer.minimize(self.cost)
-        # Comment the following calculation of gradients as it is not needed yet -Seb
-        #self.grads_vars = self.optimizer.compute_gradients(self.cost)
-
-    def _hinge_loss(self, aff, neg_aff):
-        """Maximum-margin optimization using the hinge loss."""
-        diff = tf.nn.relu(tf.subtract(neg_aff, tf.expand_dims(aff, 0) - self.margin), name='diff')
-        loss = tf.reduce_sum(diff)
-        return loss
 
     def _xent_loss(self, aff, neg_aff):
         """Cross-entropy optimization."""

@@ -15,9 +15,7 @@ class Model(object):
         
         for kwarg in kwargs.keys():
             assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
-        # Duplicado?
-        #for kwarg in kwargs.keys():
-            #assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
+            
         name = kwargs.get('name')
         if not name:
             name = self.__class__.__name__.lower()
@@ -39,18 +37,6 @@ class Model(object):
         # This makes the variables created in the model availiable for updating and training
         variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
         self.vars = {var.name: var for var in variables}
-
-    def fit(self):
-        """ Ignore, probably meant for another model. The equivalent for DECAGON is implemented in
-        optimization.
-        """
-        pass
-
-    def predict(self):
-        """ Ignore, probably meant for another model. The equivalent for DECAGON is implemented in
-        optimization.
-        """
-        pass
 
 
 class DecagonModel(Model):
@@ -96,8 +82,8 @@ class DecagonModel(Model):
         self.embeddings = [None] * self.num_obj_types
         for i, embeds in self.embeddings_reltyp.items():
             # Why is this commented? No activation function in the 2nd layer -Sebastian 
-            # self.embeddings[i] = tf.nn.relu(tf.add_n(embeds)) -SNAP
-            self.embeddings[i] = tf.add_n(embeds)
+            self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
+            #self.embeddings[i] = tf.add_n(embeds)
             
         # DECODER
         self.edge_type2decoder = {}
@@ -125,7 +111,7 @@ class DecagonModel(Model):
                     act=lambda x: x, dropout=self.dropout)
             else:
                 raise ValueError('Unknown decoder type')
-# Could not these for loops be merged in one? Is the one above necessary? It is never used again
+            
         self.latent_inters = []
         self.latent_varies = []
         for edge_type in self.edge_types:

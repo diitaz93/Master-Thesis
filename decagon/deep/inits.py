@@ -19,6 +19,6 @@ def zeros(input_dim, output_dim, name=None):
 
 
 def ones(input_dim, output_dim, name=None):
-    """All zeros."""
+    """All ones."""
     initial = tf.ones((input_dim, output_dim), dtype=tf.float32)
     return tf.Variable(initial, name=name)

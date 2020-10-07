@@ -180,12 +180,13 @@ class EdgeMinibatchIterator(object):
         feed_dict.update({placeholders['dropout']: dropout})
 
         return feed_dict
-
-    def batch_feed_dict(self, batch_edges, batch_edge_type, placeholders):
+    ## MODIFICATION FOR NEGATIVE TRAINING ##
+    def batch_feed_dict(self, batch_edges, neg_batch_edges, batch_edge_type, placeholders):
         """ Feed the tensorflow feed dictionary with the edges and indices taken as parameters
         """
         feed_dict = dict()
         feed_dict.update({placeholders['batch']: batch_edges})
+        feed_dict.update({placeholders['neg_batch']: neg_batch_edges})
         feed_dict.update({placeholders['batch_edge_type_idx']: batch_edge_type})
         feed_dict.update({placeholders['batch_row_edge_type']: self.idx2edge_type[batch_edge_type][0]}) # 0 or 1, location of row in dictionary
         feed_dict.update({placeholders['batch_col_edge_type']: self.idx2edge_type[batch_edge_type][1]}) # 0 or 1, location of col in dictionary
@@ -231,27 +232,31 @@ class EdgeMinibatchIterator(object):
         start = self.batch_num[self.current_edge_type_idx] * self.batch_size
         self.batch_num[self.current_edge_type_idx] += 1
         batch_edges = self.train_edges[i,j][k][start: start + self.batch_size]
-        return self.batch_feed_dict(batch_edges, self.current_edge_type_idx, placeholders)
+        ## MODIFICATION FOR NEGATIVE TRAINING ##
+        neg_batch_edges = self.train_edges_false[i,j][k][start: start + self.batch_size]
+        return self.batch_feed_dict(batch_edges, neg_batch_edges, self.current_edge_type_idx, placeholders)
 
     def num_training_batches(self, edge_type, type_idx):
         """ Returns the total number of different batches that can be possible formed
         with the number of edges in training given the edge type and the index.
         """
         return len(self.train_edges[edge_type][type_idx]) // self.batch_size + 1
-
+    ## MODIFICATION FOR NEGATIVE VALIDATION ##
     def val_feed_dict(self, edge_type, type_idx, placeholders, size=None):
         """ Feed the tensorflow feed dictionary with validation edges instead of training
         edges given the edge type and the index. A size of the dataset (number of edges)
         can be passed as an optional parameter.
         """
         edge_list = self.val_edges[edge_type][type_idx]
+        neg_edge_list = self.val_edges_false[edge_type][type_idx]
         if size is None:
-            return self.batch_feed_dict(edge_list, edge_type, placeholders)
+            return self.batch_feed_dict(edge_list, neg_edge_list, edge_type, placeholders)
         else:
             ind = np.random.permutation(len(edge_list))
             val_edges = [edge_list[i] for i in ind[:min(size, len(ind))]]
-            return self.batch_feed_dict(val_edges, edge_type, placeholders)
-
+            neg_val_edges = [neg_edge_list[i] for i in ind[:min(size, len(ind))]]
+            return self.batch_feed_dict(val_edges, neg_val_edges, edge_type, placeholders)
+        ## MODIFICATION FOR NEGATIVE TRAINING ##
     def shuffle(self):
         """ Re-shuffle the training set for all edge types.
             Also reset the batch number and the free batch availiable.
@@ -259,6 +264,7 @@ class EdgeMinibatchIterator(object):
         for edge_type in self.edge_types:
             for k in range(self.edge_types[edge_type]):
                 self.train_edges[edge_type][k] = np.random.permutation(self.train_edges[edge_type][k])
+                self.train_edges_false[edge_type][k] = np.random.permutation(self.train_edges_false[edge_type][k])
                 self.batch_num[self.edge_type2idx[edge_type[0], edge_type[1], k]] = 0
         self.current_edge_type_idx = 0
         self.freebatch_edge_types = list(range(self.num_edge_types))
