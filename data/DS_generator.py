@@ -35,6 +35,7 @@ PPI = pd.read_csv('original_data/bio-decagon-ppi.csv',sep=',')
 DTI = pd.read_csv('original_data/bio-decagon-targets-all.csv',sep=',')
 DDI = pd.read_csv('original_data/bio-decagon-combo.csv',sep=',')
 DSE = pd.read_csv('original_data/bio-decagon-mono.csv',sep=',')
+print('\nData loaded\n')
 # Original number of interactions
 orig_ppi = len(PPI.index)
 orig_dti = len(DTI.index)
@@ -76,6 +77,7 @@ DTI_genes = pd.unique(DTI['Gene'].values)
 new_genes_dti = len(DTI_genes)
 new_drugs_dti = len(pd.unique(DTI['STITCH'].values))
 PPI = PPI[np.logical_or(PPI['Gene 1'].isin(DTI_genes),PPI['Gene 2'].isin(DTI_genes))]
+print('Outliers removed\n')
 # ============================================================================================= #
 # REDUCED DATA STRUCTURES
 # Choosing side effects. Sort DDI to be consistent with the authors
@@ -109,6 +111,7 @@ PPI = PPI[np.logical_or(PPI['Gene 1'].isin(DTI_genes),
 PPI_genes = pd.unique(PPI[['Gene 1','Gene 2']].values.ravel()) # Unique genes in PPI
 gene2idx = {gene: i for i, gene in enumerate(PPI_genes)}
 n_genes = len(PPI_genes)
+print('Side effects selected\n')
 # ============================================================================================= #
 # ADJACENCY MATRICES AND DEGREES
 # DDI
@@ -123,6 +126,7 @@ def se_adj_matrix(se_name):
 ddi_adj_list = Parallel(n_jobs=8)\
     (delayed(se_adj_matrix)(d) for d in se_combo_name2idx.keys())        
 ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
+print('DDI adjacency matrices generated\n')
 # DTI
 dti_adj = np.zeros([n_genes,n_drugs],dtype=int)
 for i in DTI.index:
@@ -130,6 +134,7 @@ for i in DTI.index:
     col = drug2idx[DTI.loc[i,'STITCH']]
     dti_adj[row,col] = 1
 dti_adj = sp.csr_matrix(dti_adj)
+print('DTI adjacency matrix generated\n')
 # PPI
 ppi_adj = np.zeros([n_genes,n_genes],dtype=int)
 for i in PPI.index:
@@ -138,6 +143,7 @@ for i in PPI.index:
     ppi_adj[row,col]=ppi_adj[col,row]=1
 ppi_degrees = np.sum(ppi_adj,axis=0)
 ppi_adj = sp.csr_matrix(ppi_adj)
+print('PPI adjacency matrix generated\n')
 # Drug feature matrix
 drug_feat = np.zeros([n_drugs,n_semono],dtype=int)
 for i in DSE.index:
@@ -145,6 +151,7 @@ for i in DSE.index:
     col = se_mono_name2idx[DSE.loc[i,'Side Effect Name']]
     drug_feat[row,col] = 1
 drug_feat = sp.csr_matrix(drug_feat)
+print('Drug feature matrix generated\n')
 # ============================================================================================= #
 # CONTROL PRINTING
 # Interactions (edges)

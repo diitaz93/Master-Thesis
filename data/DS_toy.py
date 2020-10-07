@@ -60,6 +60,7 @@ ddi_adj_list = Parallel(n_jobs=16)\
 ddi_degrees_list = [np.array(drug_adj.sum(axis=0)).squeeze() for drug_adj in ddi_adj_list]
 # Drug feature matrix
 drug_feat = sp.csr_matrix((10 * np.random.randn(n_drugs, n_se_mono) > 19).astype(int))
+print('\nAdjacency a feature matrices generated\n')
 # ============================================================================================= #
 # CONTROL PRINTING
 # Interactions (edges)
