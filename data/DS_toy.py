@@ -63,6 +63,7 @@ drug_feat = sp.csr_matrix((10 * np.random.randn(n_drugs, n_se_mono) > 19).astype
 # ============================================================================================= #
 # CONTROL PRINTING
 # Interactions (edges)
+print('==== DATA GENERATED ====')
 print('Interactions (edges)')
 print('Number of PPI interactions:', np.sum(ppi_adj))
 print('The PPI adj matrix is filled in a',round(np.sum(ppi_adj)/pow(n_genes,2)*100,2),'%')
@@ -108,6 +109,6 @@ data['drug_feat'] = sp.csr_matrix((10 * np.random.randn(n_drugs, n_se_mono) > 15
 # Pickle saving
 filename = './data_structures/DS/DS_toy_DSE_' + str(n_se_mono) +\
 '_genes_'+str(n_genes) + '_drugs_' + str(n_drugs) + '_se_' + str(n_se_combo)
-print(filename)
+print('Output file: ',filename,'\n')
 with open(filename, 'wb') as f:
     pickle.dump(data, f, protocol=3)

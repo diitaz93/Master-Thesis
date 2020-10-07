@@ -148,6 +148,7 @@ drug_feat = sp.csr_matrix(drug_feat)
 # ============================================================================================= #
 # CONTROL PRINTING
 # Interactions (edges)
+print('==== CHANGES MADE IN DATA ====')
 print('Interactions (edges)')
 print ('Original number of PPI interactions',orig_ppi)
 print ('New number of PPI interactions',len(PPI.index))
@@ -206,7 +207,7 @@ data['drug_feat'] = drug_feat
 # Exporting
 filename = './data_structures/DS/DS_real_DSE_' + str(n_semono) +\
            '_genes_' + str(n_genes) + '_drugs_' + str(n_drugs) + '_se_' + str(N)
-print(filename)
+print('Output_file: ',filename,'\n')
 with open(filename, 'wb') as f:
     pickle.dump(data, f, protocol=3)
 
