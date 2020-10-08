@@ -11,13 +11,11 @@ data/affinities
 data/mippie
 *.xlsx
 # Data structures
-DECAGON_*
 TRAIN_*_
 PPI_BDM_*
 DDI_BDM_*
 DTI_BDM_*
 TRAIN_*
-MINIBATCH*
 results_training/
 data/data_structures/*
 
