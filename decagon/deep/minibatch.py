@@ -139,20 +139,21 @@ class EdgeMinibatchIterator(object):
             val_edges_false.append([idx_i, idx_j])
         # Choose false train edges randomly
         train_edges_false = []
-        while len(train_edges_false) < len(train_edges):
+        for e in range(train_edges.shape[0]):
             if len(train_edges_false) % 1000 == 0:
                 print("Constructing train edges=", "%04d/%04d" % 
                       (len(train_edges_false), len(train_edges)))
-            idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
-            idx_j = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[1])
-            if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
-                continue
-            if train_edges_false: # test that is not already in false edges
-                if self._ismember([idx_i, idx_j], val_edges_false) or\
-                   self._ismember([idx_i, idx_j], test_edges_false) or\
-                   self._ismember([idx_i, idx_j], train_edges_false):
+            while len(train_edges_false) < e+1:
+                idx_i = np.random.randint(0, self.adj_mats[edge_type][type_idx].shape[0])
+                idx_j = train_edges[e,1]
+                if self._ismember([idx_i, idx_j], edges_all): # test that is not a true edge
                     continue
-            train_edges_false.append([idx_i, idx_j])
+                if train_edges_false: # test that is not already in false edges
+                    if self._ismember([idx_i, idx_j], val_edges_false) or\
+                       self._ismember([idx_i, idx_j], test_edges_false) or\
+                       self._ismember([idx_i, idx_j], train_edges_false):
+                        continue
+                train_edges_false.append([idx_i, idx_j])
         # Re-build adj matrices with preprocessing
         data = np.ones(train_edges.shape[0])
         adj_train = sp.csr_matrix(
