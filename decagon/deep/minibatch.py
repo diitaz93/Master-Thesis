@@ -151,7 +151,7 @@ class EdgeMinibatchIterator(object):
                 if train_edges_false: # test that is not already in false edges
                     if self._ismember([idx_i, idx_j], val_edges_false) or\
                        self._ismember([idx_i, idx_j], test_edges_false) or\
-                       self._ismember([idx_i, idx_j], train_edges_false):
+                       #self._ismember([idx_i, idx_j], train_edges_false):
                         continue
                 train_edges_false.append([idx_i, idx_j])
         # Re-build adj matrices with preprocessing
