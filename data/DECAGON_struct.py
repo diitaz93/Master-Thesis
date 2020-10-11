@@ -67,7 +67,7 @@ if BDM:
     # PPI
     PPI_file = './data_structures/BDM/PPI_BINBDM_real_genes_' + str(n_genes)
     print('==== IMPORTED PPI VARIABLES ====')
-    with open(PPI_in_file, 'rb') as f:
+    with open(PPI_file, 'rb') as f:
         PPI = pickle.load(f)
         for key in PPI.keys():
             globals()[key]=PPI[key]
@@ -80,7 +80,7 @@ if BDM:
     DTI_file = './data_structures/BDM/DTI_BINBDM_real_genes_' + str(n_genes) + '_drugs_' +\
                str(n_drugs)
     print('==== IMPORTED DTI VARIABLES ====')
-    with open(DTI_in_file, 'rb') as f:
+    with open(DTI_file, 'rb') as f:
         DTI = pickle.load(f)
         for key in DTI.keys():
             globals()[key]=DTI[key]
@@ -97,7 +97,7 @@ if BDM:
     DDI_file = './data_structures/BDM/DDI_BINBDM_real_se_' + str(n_se_combo)  + '_drugs_' +\
                str(n_drugs)
     print('==== IMPORTED DDI VARIABLES ====')
-    with open(DDI_in_file, 'rb') as f:
+    with open(DDI_file, 'rb') as f:
         DDI = pickle.load(f)
         for key in DDI.keys():
             globals()[key]=DDI[key]
@@ -128,11 +128,11 @@ print('Protein feature matrix shape: ',np.shape(prot_feat))
 # Drug features
 drug_num_feat = drug_feat.shape[1]
 drug_nonzero_feat = len(np.nonzero(drug_feat)[0])
-drug_feat = sparse_to_tuple(drug_feat)
+drug_feat = sparse_to_tuple(sp.coo_matrix(drug_feat))
 # Protein features
 gene_num_feat = prot_feat.shape[1]
 gene_nonzero_feat = len(np.nonzero(prot_feat)[0])
-gene_feat = sparse_to_tuple(prot_feat)
+gene_feat = sparse_to_tuple(sp.coo_matrix(prot_feat))
 # ============================================================================================= #
 # CREATION OF DECAGON DICTIONARIES
 adj_mats_orig = {
@@ -195,9 +195,8 @@ data_structures['se_mono_name2idx'] = se_mono_name2idx
 data_structures['se_combo_name2idx'] = se_combo_name2idx
 # Exporting
 filename_out = './data_structures/DECAGON/DECAGON_' + words[2] + DSE*('_DSE_'+str(n_se_mono)) +\
-'_genes_' + str(n_genes) + '_drugs_' + str(n_drugs) + '_se_' +\
-str(n_se_combo)
-print(filename_out)
+BDM*'_BDM' + '_genes_' + str(n_genes) + '_drugs_' + str(n_drugs) + '_se_' + str(n_se_combo)
+print('Output data exported in: ',filename_out)
 
 with open(filename_out, 'wb') as f:
     pickle.dump(data_structures, f, protocol=2)
