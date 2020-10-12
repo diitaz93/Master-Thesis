@@ -39,7 +39,6 @@ with open(input_file, 'rb') as f:
     dti_adj = pickle.load(f)['dti_adj']
 print('\nInput data loaded\n')
 jobs = 4
-usrnm = getuser()
 bdm = BDM(ndim=2, partition=PartitionRecursive)
 part = 'PartitionRecursive'
 # ============================================================================================= #
@@ -75,7 +74,7 @@ output_data['partition_type'] = part
 path = os.getcwd()
 words = input_file.split('_')
 output_file = path + '/data_structures/BDM/DTI_BDM_' + words[2] + '_genes_' + str(genes) +\
-             '_drugs_' + str(drugs) + '_' + usrnm + str(jobs)
+             '_drugs_' + str(drugs)
 with open(output_file, 'wb') as f:
     pickle.dump(output_data, f, protocol=3)
 print('Output data exported in ', output_file,'\n')
