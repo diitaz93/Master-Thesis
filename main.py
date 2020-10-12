@@ -6,21 +6,25 @@
 # Creation Date: 07/05/2020                                                                     #
 # ============================================================================================= #
 """
-Runs DECAGON over a consistent real dataset. A file containing the parameters of the simulation
-and the data structures is loaded. It contains the features which are used, that can be None,
-Single drug side effects, Algortithmic complaxity of the subnetworks or both.
+Trains and tests DECAGON over a consistent dataset exporting performance in a pickle python2 
+readable file. 
+It recieves as parameter the path of a pickle file containing the specifications and the data 
+structures. This file defines which features are going to be used, that can be None, Single drug 
+side effects, Algortithmic complexity of the subnetworks or both.
 This scripts runs the code on CPU.
 
 Parameters
 ----------
 in_file : string
     (Relative) path to the file of data structures.
+--epochs : int (optional), defaults to 50
+    Number of epochs (how many times the whole dataset is used to train the model).
+-- dropout : float (optional), defaults to 0.1
+    Fraction of the neurons that are turned off during each training step (to avoid overfitting).
 """
 # ============================================================================================= #
 from __future__ import division
 from __future__ import print_function
-from operator import itemgetter
-from itertools import combinations, chain
 import argparse
 import time
 import datetime
@@ -28,7 +32,6 @@ import os
 import warnings
 import tensorflow as tf
 import numpy as np
-import networkx as nx
 import scipy.sparse as sp
 from sklearn import metrics
 import pandas as pd
@@ -41,17 +44,16 @@ from decagon.utility import rank_metrics, preprocessing
 
 # FILE PATHS
 parser = argparse.ArgumentParser(description='Train DEGAGON')
-parser.add_argument('in_file',type=str, help="Input file with data structures")
+parser.add_argument('in_file',type=str, help="Path of file with data structures")
+parser.add_argument('--epochs', type=int, default=50, help='Number of epochs for training')
+parser.add_argument('--dropout', type=float, default=0.1, help='Dropout value')
 args = parser.parse_args()
 in_file = args.in_file
 words = in_file.split('_')
 DSE = False
 BDM = False
-DOCK = False
-BIND = False
 if 'DSE' in words: DSE = True
 if 'BDM' in words: BDM = True
-d_text = ''
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
@@ -103,6 +105,7 @@ def get_accuracy_scores(edges_pos, edges_neg, edge_type, noise=False):
 def construct_placeholders(edge_types):
     placeholders = {
         'batch': tf.placeholder(tf.int32, name='batch'),
+        'neg_batch': tf.placeholder(tf.int32, name='neg_batch'),
         'batch_edge_type_idx': tf.placeholder(tf.int32, shape=(), name='batch_edge_type_idx'),
         'batch_row_edge_type': tf.placeholder(tf.int32, shape=(), name='batch_row_edge_type'),
         'batch_col_edge_type': tf.placeholder(tf.int32, shape=(), name='batch_col_edge_type'),
@@ -136,11 +139,11 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('neg_sample_size', 1, 'Negative sample size.')
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 50, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', args.epochs, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 64, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
-flags.DEFINE_float('dropout', 0.1, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_float('dropout', args.dropout, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('max_margin', 0.1, 'Max margin parameter in hinge loss')
 flags.DEFINE_integer('batch_size', 512, 'minibatch size.')
 flags.DEFINE_boolean('bias', True, 'Bias term.')
@@ -150,18 +153,15 @@ placeholders = construct_placeholders(edge_types)
 # LOAD MINIBATCH ITERATOR, AND CREATE MODEL AND OPTIMIZER
 noise_str = bool(noise)*('_noise_' + str(noise))
 print("Load minibatch iterator")
-mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+d_text+\
-          '_genes_'+str(n_genes)+'_drugs_'+\
-          str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
+mb_file = 'data/data_structures/MINIBATCH/MINIBATCH_'+words[2]+'_genes_'+str(n_genes)+\
+          '_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_batchsize_'+str(FLAGS.batch_size)+\
           '_valsize_'+str(val_test_size) + noise_str
+
 with open(mb_file, 'rb') as f:
-    minibatch = pickle.load(f)
-# Commented until definitive minibatch is created (including time and memory)
-#with open(mb_file, 'rb') as f:
-#    MB = pickle.load(f)
-#    for key in MB.keys():
-#        globals()[key]=MB[key]
-#        print(key,"Imported successfully")
+    MB = pickle.load(f)
+    for key in MB.keys():
+        globals()[key]=MB[key]
+        print(key,"Imported successfully")
 minibatch.feat = feat
 print("New features loaded to minibatch")
 
@@ -194,13 +194,12 @@ feed_dict = {}
 # TRAINING
 # Metric structures initialization
 output_data={}
-out_file = 'results_training/TRAIN_'+words[2]+d_text+DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')\
+out_file = 'results_training/TRAIN_'+words[2]+DSE*('_DSE_'+str(n_se_mono))+BDM*('_BDM')\
             +'_genes_'+str(n_genes)+'_drugs_'+str(n_drugs)+'_se_'+str(n_se_combo)+'_epochs_'+\
-            str(FLAGS.epochs)+'_h1_'+str(FLAGS.hidden1)+'_h2_'+str(FLAGS.hidden2)+\
-            '_lr_'+str(FLAGS.learning_rate)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
+            str(FLAGS.epochs)+'_dropout_'+str(FLAGS.dropout)+'_valsize_'+\
             str(val_test_size) + noise_str
 val_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
-#train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
+train_metrics = np.zeros([FLAGS.epochs,num_edge_types,3])
 # Start training
 print("Train model")
 for epoch in range(FLAGS.epochs):
@@ -215,7 +214,7 @@ for epoch in range(FLAGS.epochs):
             dropout=FLAGS.dropout,
             placeholders=placeholders)
         # Training step: run single weight update
-        outs = sess.run([opt.opt_op, opt.cost, opt.batch_edge_type_idx], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op], feed_dict=feed_dict)
         if (itr+1)%1000==0:print('Iteration',itr,' of epoch',epoch)
         itr += 1
     # Train & validation accuracy over all train data per epoch
@@ -225,18 +224,18 @@ for epoch in range(FLAGS.epochs):
     for r in range(num_edge_types):
         i,j,k = minibatch.idx2edge_type[r]
         print('Metrics for ', edge2name[i,j][k])
-        #train_metrics[epoch,r,:] = get_accuracy_scores(
-            #minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
+        train_metrics[epoch,r,:] = get_accuracy_scores(
+            minibatch.train_edges[i,j][k], minibatch.train_edges_false[i,j][k],(i,j,k))
         val_metrics[epoch,r,:] = get_accuracy_scores(
             minibatch.val_edges[i,j][k], minibatch.val_edges_false[i,j][k],(i,j,k))
-        print("AUROC:"#Train=", "{:.4f}".format(train_metrics[epoch,r,0])
+        print("AUROC:Train=", "{:.4f}".format(train_metrics[epoch,r,0])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,0])
-              ,"AUPRC:"#Train=", "{:.4f}".format(train_metrics[epoch,r,1])
+              ,"AUPRC:Train=", "{:.4f}".format(train_metrics[epoch,r,1])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,1])
-              ,"Accuracy:"#Train=", "{:.4f}".format(train_metrics[epoch,r,2])
+              ,"Accuracy:Train=", "{:.4f}".format(train_metrics[epoch,r,2])
               ,"Validation=", "{:.4f}".format(val_metrics[epoch,r,2]))
     output_data['val_metrics'] = val_metrics
-    #output_data['train_metrics'] = train_metrics
+    output_data['train_metrics'] = train_metrics
     output_data['epoch'] = epoch + 1
     with open(out_file,'wb') as f:
         pickle.dump(output_data, f, protocol=2)
@@ -259,7 +258,7 @@ memUse = ps.memory_info()
 print('Virtual memory:', memUse.vms*1e-09,'Gb')
 print('RSS Memory:', memUse.rss*1e-09,'Gb')
 train_time=time.time()-start
-#output_data['mb_time'] = mb_time
+output_data['mb_time'] = mb_time
 output_data['train_time'] = train_time
 output_data['edge2name'] = edge2name
 output_data['drug2idx'] = drug2idx

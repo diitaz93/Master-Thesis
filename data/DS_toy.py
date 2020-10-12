@@ -13,13 +13,13 @@ Thresholds of random matrices have been tunned heuristically.
 
 Parameters
 ----------
-n_genes : int
+n_genes : int, default=19081
 	Number of genes of the artificial network.
-n_drugs : int
-	Number of drugs of the artificial network.
-mono : int
+n_drugs : int, default=639
+	Number of drugs of the artificial network. 
+mono : int, default=9702
 	Total number of single side effects of drug features.
-combo : int
+combo : int, default=964
 	Total number of polypharmacy side effects.
 
 """
