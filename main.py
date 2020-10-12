@@ -19,8 +19,8 @@ in_file : string
     (Relative) path to the file of data structures.
 --epochs : int (optional), defaults to 50
     Number of epochs (how many times the whole dataset is used to train the model).
--- dropout : float (optional), defaults to 0.1
-    Fraction of the neurons that are turned off during each training step (to avoid overfitting).
+-- batch_size : int (optional), defaults to 512.
+    Number of training instances used per batch in SGD.
 """
 # ============================================================================================= #
 from __future__ import division
@@ -46,7 +46,7 @@ from decagon.utility import rank_metrics, preprocessing
 parser = argparse.ArgumentParser(description='Train DEGAGON')
 parser.add_argument('in_file',type=str, help="Path of file with data structures")
 parser.add_argument('--epochs', type=int, default=50, help='Number of epochs for training')
-parser.add_argument('--dropout', type=float, default=0.1, help='Dropout value')
+parser.add_argument('--batch_size', type=int, default=512, help='Size of batch')
 args = parser.parse_args()
 in_file = args.in_file
 words = in_file.split('_')
@@ -143,9 +143,9 @@ flags.DEFINE_integer('epochs', args.epochs, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 64, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
-flags.DEFINE_float('dropout', args.dropout, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_float('dropout', 0.1, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('max_margin', 0.1, 'Max margin parameter in hinge loss')
-flags.DEFINE_integer('batch_size', 512, 'minibatch size.')
+flags.DEFINE_integer('batch_size', args.batch_size, 'minibatch size.')
 flags.DEFINE_boolean('bias', True, 'Bias term.')
 print("Defining placeholders")
 placeholders = construct_placeholders(edge_types)
