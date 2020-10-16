@@ -8,8 +8,9 @@ data/original_data/*
 data/amir_docking_data/*
 data/old_files/*
 data/affinities
-data/mippie
+data/mippie/El_primo
 *.xlsx
+*.tsv
 # Data structures
 TRAIN_*_
 PPI_BDM_*
@@ -21,6 +22,9 @@ data/data_structures/*
 
 # Results
 *.png
+
+# Compressed
+*.zip
 
 # Open office
 *.ods
