@@ -213,7 +213,7 @@ for epoch in range(FLAGS.epochs):
     t = time.time()
     itr = 0
     while not minibatch.end():
-    # Construct feed dictionary     
+    	# Construct feed dictionary     
 	feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)     
 	feed_dict = minibatch.update_feed_dict(
             feed_dict=feed_dict,

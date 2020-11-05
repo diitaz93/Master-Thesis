@@ -117,7 +117,6 @@ class GraphConvolutionMulti(MultiLayer):
         outputs = tf.nn.l2_normalize(outputs, dim=1)
         return outputs
 
-
 class DEDICOMDecoder(MultiLayer):
     """DEDICOM Tensor Factorization Decoder model layer for link prediction."""
     def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
@@ -146,7 +145,6 @@ class DEDICOMDecoder(MultiLayer):
             rec = tf.matmul(product3, tf.transpose(inputs_col))
             outputs.append(self.act(rec))
         return outputs
-
 
 class DistMultDecoder(MultiLayer):
     """DistMult Decoder model layer for link prediction."""
