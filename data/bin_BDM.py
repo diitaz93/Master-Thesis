@@ -55,10 +55,10 @@ s_rem = np.std(rem_edgebdm_ppi)
 print('Mean of node BDM is ',m_nodes,' and std is ', s_nodes)
 print('Mean of remove edges BDM is ',m_rem,' and std is ', s_rem,'\n')
 # Up and down thresholds
-d_thr_nodes = m_nodes-s_nodes
-u_thr_nodes = m_nodes+s_nodes
-d_thr_rem = m_rem-s_rem
-u_thr_rem = m_rem+s_rem
+d_thr_nodes = m_nodes-2*s_nodes
+u_thr_nodes = m_nodes+2*s_nodes
+d_thr_rem = m_rem-2*s_rem
+u_thr_rem = m_rem+2*s_rem
 # Node complexity sorting
 neg_nodes = nodebdm_ppi<d_thr_nodes
 pos_nodes = nodebdm_ppi>u_thr_nodes
@@ -111,14 +111,14 @@ print('Mean of gene node BDM is ',m_nodes_genes,' and std is ', s_nodes_genes)
 print('Mean of remove drug edges BDM is ',m_rem_drugs,' and std is ', s_rem_drugs)
 print('Mean of remove gene edges BDM is ',m_rem_genes,' and std is ', s_rem_genes,'\n')
 # Up and down thresholds
-d_thr_nodes_drugs = m_nodes_drugs-s_nodes_drugs
-u_thr_nodes_drugs = m_nodes_drugs+s_nodes_drugs
-d_thr_nodes_genes = m_nodes_genes-s_nodes_genes
-u_thr_nodes_genes = m_nodes_genes+s_nodes_genes
-d_thr_rem_drugs = m_rem_drugs-s_rem_drugs
-u_thr_rem_drugs = m_rem_drugs+s_rem_drugs
-d_thr_rem_genes = m_rem_genes-s_rem_genes
-u_thr_rem_genes = m_rem_genes+s_rem_genes
+d_thr_nodes_drugs = m_nodes_drugs-2*s_nodes_drugs
+u_thr_nodes_drugs = m_nodes_drugs+2*s_nodes_drugs
+d_thr_nodes_genes = m_nodes_genes-2*s_nodes_genes
+u_thr_nodes_genes = m_nodes_genes+2*s_nodes_genes
+d_thr_rem_drugs = m_rem_drugs-2*s_rem_drugs
+u_thr_rem_drugs = m_rem_drugs+2*s_rem_drugs
+d_thr_rem_genes = m_rem_genes-2*s_rem_genes
+u_thr_rem_genes = m_rem_genes+2*s_rem_genes
 # Node complexity sorting
 neg_nodes_drugs = nodebdm_drugs_dti<d_thr_nodes_drugs
 pos_nodes_drugs = nodebdm_drugs_dti>u_thr_nodes_drugs
@@ -176,10 +176,10 @@ m_rem = np.mean(rem_edgebdm_ddi_list,axis=1)
 s_nodes = np.std(nodebdm_ddi_list,axis=1)
 s_rem = np.std(rem_edgebdm_ddi_list,axis=1)
 # Up & down thresholds
-d_thr_nodes = m_nodes-s_nodes
-u_thr_nodes = m_nodes+s_nodes
-d_thr_rem = m_rem-s_rem
-u_thr_rem = m_rem+s_rem
+d_thr_nodes = m_nodes-2*s_nodes
+u_thr_nodes = m_nodes+2*s_nodes
+d_thr_rem = m_rem-2*s_rem
+u_thr_rem = m_rem+2*s_rem
 bin_nodebdm_ddi_list = []
 bin_rem_edgebdm_ddi_list = []
 # Complexity sorting
