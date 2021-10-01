@@ -13,7 +13,7 @@ version of the PPI and DTI matrices.
 Parameters
 ----------
 in_file : string
-    (Relative) path to the file of data structures.
+    (Relative) path to the file of EDGE BDM.
 """
 # ============================================================================================= #
 import numpy as np
@@ -21,8 +21,8 @@ import scipy.sparse as sp
 import pickle
 import argparse
 
-parser = argparse.ArgumentParser(description='DS file')
-parser.add_argument('in_file',type=str, help="Input file with data structures")
+parser = argparse.ArgumentParser(description='BDM file')
+parser.add_argument('in_file',type=str, help="Input file with algorithmic complexity values.")
 args = parser.parse_args()
 in_file = args.in_file
 words = in_file.split('_')

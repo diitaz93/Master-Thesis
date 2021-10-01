@@ -38,8 +38,8 @@ for edge in minibatch.test_edges:
     for p in range(np.shape(minibatch.test_edges[edge])[0]):
         data_true = minibatch.test_edges[edge][p]
         data_false = minibatch.test_edges_false[edge][p]
-        assert len(data_true)==len(data_false), 'Dimension of true and false mismatch'
         l = len(data_true)
+        assert l==len(data_false), 'Dimension of true and false mismatch'
         full_idx = np.arange(2*l)
         n_idx = np.floor(noise*2*l).astype(np.int)
         idx = np.random.choice(full_idx,size=n_idx)
