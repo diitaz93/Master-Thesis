@@ -37,6 +37,7 @@ if [ ! -d "data_structures" ]; then
     mkdir DS
     mkdir DECAGON
     mkdir MINIBATCH
+    mkdir BDM
 fi
 
 exit 0
